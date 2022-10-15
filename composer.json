@@ -1,5 +1,5 @@
 {
-    "name": "composite/db",
+    "name": "compositephp/db",
     "description": "PHP 8.1+ ORM and DataMapper",
     "type": "library",
     "license": "MIT",
