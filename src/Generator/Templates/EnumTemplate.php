@@ -1,0 +1,12 @@
+<?=$phpOpener??''?>
+
+
+namespace <?=$enumNamespace??''?>;
+
+enum <?=$enumClassShortname??''?>
+
+{
+<?php foreach($cases ?? [] as $case) : ?>
+    case <?=$case?>;
+<?php endforeach; ?>
+}

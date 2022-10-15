@@ -1,0 +1,33 @@
+version: '3.8'
+services:
+  mysql-test:
+    image: mysql:8.0
+    command: mysqld --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: 'root'
+      MYSQL_DATABASE: 'test'
+      MYSQL_USER: 'test'
+      MYSQL_PASSWORD: 'test'
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'no'
+    ports:
+      - '3306:3306'
+    cap_add:
+      - SYS_NICE
+    volumes:
+      - ./runtime/mysql:/var/lib/mysql
+
+  pg-test:
+    image: postgres
+    environment:
+      - POSTGRES_USER=test
+      - POSTGRES_PASSWORD=test
+      - POSTGRES_DB=test
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./runtime/postgres:/var/lib/postgresql/data/
+
+volumes:
+  mysql-test:
+  pg-test:
+
