@@ -1,8 +1,8 @@
 # What is Composite DB
 
-Composite DB is PHP ORM, DataMapper which allows you to represent your SQL database in OOP style using full power of 
-PHP 8.1+ class syntax. It also gives you CRUD and automatic caching out of the box. You can start to work with 
-SQL tables from php code in a minutes!
+Composite DB is modern and light PHP ORM, DataMapper which allows you to represent your SQL tables schme in OOP style using full 
+power of PHP 8.1+ class syntax. It also gives you CRUD, query builder and automatic caching out of the box, so you can start
+to work with your database from php code in a minutes!
 
 ## Features
 
@@ -13,6 +13,7 @@ SQL tables from php code in a minutes!
 * Generates code from SQL tables schema
 * Automatic migration generator
 * Supports all popular SQL drivers (MySQL, SQLite, Postgres, MicrosoftSQL)
+* Query builder
 * Lightweight and fast
 
 ## Why do I need this, if there is Doctrine or Cycle ORM?
