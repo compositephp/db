@@ -66,7 +66,7 @@ public function findAllActiveAdults(): array
 {
     $rows = $this->findAllInternal([
         'age' => ['>', 18],
-        'status' => Status::Active,
+        'status' => Status::ACTIVE->name,
     ]);
     return $this->createEntities($rows);
 }

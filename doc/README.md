@@ -7,3 +7,4 @@
 3. [Automatic Caching](cache.md)
 4. [Code generators](code-generators.md)
 5. [Migrations](migrations.md)
+6. [Example of usage](example.md)
