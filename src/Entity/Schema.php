@@ -112,6 +112,11 @@ class Schema
         return null;
     }
 
+    public function hasAutoIncrementPrimaryKey(): bool
+    {
+        return (bool)array_filter($this->getPrimaryKeyColumns(), fn(AbstractColumn $column) => $column->isAutoIncrement());
+    }
+
     public function getDatabaseName(): ?string
     {
         return $this->table?->db;

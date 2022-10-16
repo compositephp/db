@@ -108,6 +108,9 @@ abstract class AbstractTable
         return $this->select()->where($where)->count();
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function transaction(callable $callback, ?string $isolationLevel = null)
     {
         return $this->db->transaction($callback, $isolationLevel);

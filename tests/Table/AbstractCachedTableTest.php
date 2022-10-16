@@ -2,6 +2,7 @@
 
 namespace Composite\DB\Tests\Table;
 
+use Composite\DB\AbstractCachedTable;
 use Composite\DB\AbstractEntity;
 use Composite\DB\AbstractTable;
 use Composite\DB\Tests\Table\TestStand\Tables;
@@ -165,6 +166,59 @@ final class AbstractCachedTableTest extends BaseTableTest
         $table = new Tables\TestAutoincrementCachedTable(self::getDatabaseManager(), self::getCache());
         $reflectionMethod = new \ReflectionMethod($table, 'buildCacheKey');
         $actual = $reflectionMethod->invoke($table, ...$parts);
+        $this->assertEquals($expected, $actual);
+    }
+
+    public function collectCacheKeysByEntity_dataProvider(): array
+    {
+        return [
+            [
+                new Entities\TestAutoincrementEntity(name: 'foo'),
+                new Tables\TestAutoincrementCachedTable(self::getDatabaseManager(), self::getCache()),
+                [
+                    'sqlite.TestAutoincrement.v1.o.name_foo',
+                    'sqlite.TestAutoincrement.v1.l.name_foo',
+                    'sqlite.TestAutoincrement.v1.c.name_foo',
+                ],
+            ],
+            [
+                Entities\TestAutoincrementEntity::fromArray(['id' => 123, 'name' => 'bar']),
+                new Tables\TestAutoincrementCachedTable(self::getDatabaseManager(), self::getCache()),
+                [
+                    'sqlite.TestAutoincrement.v1.o.name_bar',
+                    'sqlite.TestAutoincrement.v1.l.name_bar',
+                    'sqlite.TestAutoincrement.v1.c.name_bar',
+                    'sqlite.TestAutoincrement.v1.o.id_123',
+                ],
+            ],
+            [
+                new Entities\TestUniqueEntity(id: '123abc', name: 'foo'),
+                new Tables\TestUniqueCachedTable(self::getDatabaseManager(), self::getCache()),
+                [
+                    'sqlite.TestUnique.v1.l.name_foo',
+                    'sqlite.TestUnique.v1.c.name_foo',
+                    'sqlite.TestUnique.v1.o.id_123abc',
+                ],
+            ],
+            [
+                Entities\TestUniqueEntity::fromArray(['id' => '456def', 'name' => 'bar']),
+                new Tables\TestUniqueCachedTable(self::getDatabaseManager(), self::getCache()),
+                [
+                    'sqlite.TestUnique.v1.l.name_bar',
+                    'sqlite.TestUnique.v1.c.name_bar',
+                    'sqlite.TestUnique.v1.o.id_456def',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider collectCacheKeysByEntity_dataProvider
+     */
+    public function test_collectCacheKeysByEntity(AbstractEntity $entity, AbstractCachedTable $table, array $expected): void
+    {
+        $reflectionMethod = new \ReflectionMethod($table, 'collectCacheKeysByEntity');
+        $actual = $reflectionMethod->invoke($table, $entity);
         $this->assertEquals($expected, $actual);
     }
 }

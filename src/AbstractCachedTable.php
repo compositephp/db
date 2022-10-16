@@ -2,9 +2,9 @@
 
 namespace Composite\DB;
 
+use Composite\DB\Exceptions\DbException;
 use Cycle\Database\DatabaseProviderInterface;
 use Psr\SimpleCache\CacheInterface;
-use Psr\SimpleCache\InvalidArgumentException;
 
 abstract class AbstractCachedTable extends AbstractTable
 {
@@ -19,75 +19,88 @@ abstract class AbstractCachedTable extends AbstractTable
 
     abstract protected function getFlushCacheKeys(AbstractEntity $entity): array;
 
-    final public function flushCache(AbstractEntity $entity): void
-    {
-        $keys = [];
-        if (!$entity->isNew() || !$this->getSchema()->getAutoIncrementColumn()) {
-            $keys[] = $this->getOneCacheKey($entity);
-        }
-        if (!$keys = array_merge($keys, $this->getFlushCacheKeys($entity))) {
-            return;
-        }
-        try {
-            $this->cache->deleteMultiple(array_unique($keys));
-        } catch (InvalidArgumentException) {}
-    }
-
+    /**
+     * @throws \Throwable
+     */
     public function save(AbstractEntity &$entity): void
     {
-        $this->flushCache($entity);
-        parent::save($entity);
+        $this->transaction(function () use (&$entity) {
+            $cacheKeys = $this->collectCacheKeysByEntity($entity);
+            parent::save($entity);
+            if ($cacheKeys && !$this->cache->deleteMultiple(array_unique($cacheKeys))) {
+                throw new DbException('Failed to flush cache keys');
+            }
+        });
     }
 
     /**
      * @param AbstractEntity[] $entities
      * @return  AbstractEntity[]
+     * @throws \Throwable
      */
     public function saveMany(array $entities): array
     {
         return $this->transaction(function() use ($entities) {
             $cacheKeys = [];
             foreach ($entities as $entity) {
-                $cacheKeys = array_merge(
-                    $cacheKeys,
-                    [$this->getOneCacheKey($entity)],
-                    $this->getFlushCacheKeys($entity)
-                );
+                $cacheKeys = array_merge($cacheKeys, $this->collectCacheKeysByEntity($entity));
             }
-            $this->cache->deleteMultiple(array_unique($cacheKeys));
             foreach ($entities as $entity) {
                 parent::save($entity);
+            }
+            if ($cacheKeys && !$this->cache->deleteMultiple(array_unique($cacheKeys))) {
+                throw new DbException('Failed to flush cache keys');
             }
             return $entities;
         });
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function delete(AbstractEntity &$entity): void
     {
-        $this->flushCache($entity);
-        parent::delete($entity);
+        $this->transaction(function () use (&$entity) {
+            $cacheKeys = $this->collectCacheKeysByEntity($entity);
+            parent::delete($entity);
+            if ($cacheKeys && !$this->cache->deleteMultiple(array_unique($cacheKeys))) {
+                throw new DbException('Failed to flush cache keys');
+            }
+        });
     }
 
-    /**v
+    /**
      * @param AbstractEntity[] $entities
+     * @throws \Throwable
      */
     public function deleteMany(array $entities): bool
     {
         return $this->transaction(function() use ($entities) {
             $cacheKeys = [];
             foreach ($entities as $entity) {
-                $cacheKeys = array_merge(
-                    $cacheKeys,
-                    [$this->getOneCacheKey($entity)],
-                    $this->getFlushCacheKeys($entity)
-                );
+                $cacheKeys = array_merge($cacheKeys, $this->collectCacheKeysByEntity($entity));
             }
-            $this->cache->deleteMultiple(array_unique($cacheKeys));
             foreach ($entities as $entity) {
                 parent::delete($entity);
             }
+            if ($cacheKeys && !$this->cache->deleteMultiple(array_unique($cacheKeys))) {
+                throw new DbException('Failed to flush cache keys');
+            }
             return true;
         });
+    }
+
+    /**
+     * @param AbstractEntity $entity
+     * @return string[]
+     */
+    private function collectCacheKeysByEntity(AbstractEntity $entity): array
+    {
+        $keys = $this->getFlushCacheKeys($entity);
+        if (!$entity->isNew() || !$this->getSchema()->hasAutoIncrementPrimaryKey()) {
+            $keys[] = $this->getOneCacheKey($entity);
+        }
+        return $keys;
     }
 
     protected function findByPkCachedInternal(mixed $pk, null|int|\DateInterval $ttl = null): ?array

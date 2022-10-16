@@ -31,7 +31,9 @@ final class SchemaTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue($schema->isSoftDelete);
         $this->assertNull($schema->getDatabaseName());
         $this->assertNull($schema->getTableName());
+        $this->assertCount(1, $schema->getPrimaryKeyColumns());
         $this->assertSame($schema->columns['id'], $schema->getAutoIncrementColumn());
+        $this->assertTrue($schema->hasAutoIncrementPrimaryKey());
         $this->assertSame(
             [
                 'id' => $schema->columns['id'],
