@@ -4,39 +4,29 @@ Composite DB is modern and light PHP ORM, DataMapper which allows you to represe
 power of PHP 8.1+ class syntax. It also gives you CRUD, query builder and automatic caching out of the box, so you can start
 to work with your database from php code in a minutes!
 
-## Features
+## Why do you need another ORM if there are already Doctrine, CycleORM, etc.
 
-* Uses full power of PHP 8.1+ class syntax to represent SQL table schema
-* Automatic caching out the box (redis, memcache, filecache, etc)
-* Serialization entity to json or flat array with scalar values
-* Deserialization from array to entity with auto-casting to smart types (DateTime, Enums, etc.)
-* Generates code from SQL tables schema
-* Automatic migration generator
-* Supports all popular SQL drivers (MySQL, SQLite, Postgres, MicrosoftSQL)
-* Query builder
-* Lightweight and fast
+Composite DB solves multiple problems of popular ORM's:
 
-## Why do I need this, if there is Doctrine or Cycle ORM?
+* **Lightweight** - easier entity schema, no getters and setters, you don't need attributes for each column definition, 
+just use native php class syntax.
+* **Speed** - it's 1.5x faster in pure SQL queries mode and many times faster in automatic caching mode.
+* **Easy caching** - gives you CRUD operations caching out of the box and in general its much easier to work with cached "selects".
+* **Mixed return types** - Composite DB forces you to be more strict typed and makes your IDE happy.
+* **Hydration** - you can serialize your Entities to plain array or json and deserialize them back.
+* **Flexibility** - gives you more freedom to extend Repositories, for example its easier to build sharding tables.
+* **Code generation** - you can generate Entity and Repository classes from your SQL tables.
+* **Division of responsibility** - there is no "god" entity manager, every Entity has its own Repository class and its the only entry point to make queries to your table.
 
-Composite DB designed as fast and easy to use alternative of popular ORM's. In synthetic CRUD test its 1.5x faster than
-Doctrine or Cycle ORM in pure SQL queries mode and many times faster in automatic-cache mode.
-Additionally, it provides more typed structure so you will not need PHPdoc to help your IDE.
+But there is 1 sacrifice for all these features - there is no support for relations in Composite DB. Its too much 
+uncontrollable magic and hidden bottlenecks with "JOINs" and its not possible to implement automatic caching with 
+relations. We recommend to have full control and make several cached select queries instead of "JOINs".
 
-But there is consequence of such speed, it's quite difficult to combine automatic-cache and foreign keys so Composite DB
-doesn't support joins or any relations between SQL tables.
+### When you shouldn't use Composite DB
 
-### When to use Composite DB
-
-* You have many simple SQL tables
-* You want to cache query results and make it easy
-* You are fine to make 2 cached selects instead of using SQL "JOINS"
-* You want typed interfaces out of the box to help your IDE
-* You tired to write the code and want to generate it
-
-### When to use alternatives
-
-You have complex and branched structure of tables in your database and you 100% sure in your indexes and 
-fully trust JOIN performance.
+1. If you have intricate structure with many foreign keys in your database 
+2. You 100% sure in your indexes and fully trust "JOINs" performance
+3. You dont want to do extra cached select queries and want some magic
 
 ## Requirements
 
