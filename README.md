@@ -11,6 +11,7 @@ Overview:
 * [Requirements](#requirements)
 * [Installation](#installation)
 * [Quick example](#quick-example)
+* [Documentation](doc/README.md)
 
 ## Mission
 You probably may ask, why do you need another ORM if there are already popular Doctrine, CycleORM, etc.?
@@ -27,8 +28,13 @@ just use native php class syntax.
 * **Code generation** - you can generate Entity and Repository classes from your SQL tables.
 * **Division of responsibility** - there is no "god" entity manager, every Entity has its own Repository class and its the only entry point to make queries to your table.
 
-But there is 1 sacrifice for all these features - there is no support for relations in Composite DB. Its too much 
-uncontrollable magic and hidden bottlenecks with "JOINs" and its not possible to implement automatic caching with 
+It also has many popular features such as:
+
+* **Query Builder** - build your queries with constructor, based on [cycle/database](https://github.com/cycle/database)
+* **Migrations** - based on [cycle/migrations](https://github.com/cycle/migrations)
+
+But there is 1 sacrifice for all these features - there is no support for relations in Composite DB. Its too much
+uncontrollable magic and hidden bottlenecks with "JOINs" and its not possible to implement automatic caching with
 relations. We recommend to have full control and make several cached select queries instead of "JOINs".
 
 ### When you shouldn't use Composite DB
@@ -137,17 +143,6 @@ $table->countAll();
 ```
 
 > You can find full working example [here](doc/example.md) which you can copy and run as is.
-
-## Documentation
-
-1. Basics
-   - [Entity](doc/entity.md)
-   - [Table](doc/table.md)
-2. [Configuration](doc/configuration.md)
-3. [Automatic Caching](doc/cache.md)
-4. [Code generators](doc/code-generators.md)
-5. [Migrations](doc/migrations.md)
-6. More coming soon
 
 ## License:
 
