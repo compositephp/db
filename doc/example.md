@@ -2,7 +2,7 @@
 
 This is complete working example, you can copy and run it as is.
 
-All you need is [pdo_sqlite](https://www.php.net/manual/en/ref.pdo-sqlite.php) extension in your php.
+All you need is [pdo_sqlite](https://www.php.net/manual/en/ref.pdo-sqlite.php) extension in your php and installed app via composer.
 
 ```php
 <?php declare(strict_types=1);
