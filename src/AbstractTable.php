@@ -11,6 +11,7 @@ use Cycle\Database\Query\SelectQuery;
 abstract class AbstractTable
 {
     protected DatabaseInterface $db;
+    private ?SelectQuery $selectQuery = null;
 
     abstract protected function getSchema(): Schema;
 
@@ -118,7 +119,10 @@ abstract class AbstractTable
 
     protected function select(): SelectQuery
     {
-        return $this->db->select()->from($this->getTableName());
+        if ($this->selectQuery === null) {
+            $this->selectQuery = $this->db->select()->from($this->getTableName());
+        }
+        return clone $this->selectQuery;
     }
 
     protected function findByPkInternal(mixed $pk): ?array
