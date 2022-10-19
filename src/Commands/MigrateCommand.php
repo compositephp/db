@@ -123,7 +123,7 @@ class MigrateCommand extends Command
 
         return $this->migrator->getRepository()->registerMigration(
             $image->getName(),
-            $image->getClass()->getName(),
+            $image->getClassName(),
             $image->getFile()->render()
         );
     }

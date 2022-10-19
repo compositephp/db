@@ -57,35 +57,28 @@ class GenerateTableCommand extends Command
             if (!$tableClass) {
                 $tableClass = $proposedClass;
             }
+        } else {
+            if (str_starts_with($tableClass, '\\')) {
+                $tableClass = substr($tableClass, 1);
+            }
         }
 
-        if (!preg_match('/^(.+)\\\(\w+)$/', $tableClass, $matches)) {
+        if (!preg_match('/^(.+)\\\(\w+)$/', $tableClass)) {
             return $this->showError("Table class `$tableClass` is incorrect");
         }
-        $tableNamespace = $matches[1];
-        $tableClassShortName = $matches[2];
-
-        $file = new FileDeclaration($tableNamespace);
-
         if ($this->input->getOption('cached')) {
             $template = new CachedTableClassBuilder(
                 schema: $schema,
-                tableClassName: $tableClassShortName,
+                tableClass: $tableClass,
             );
-            $file->addUse(AbstractEntity::class);
         } else {
             $template = new TableClassBuilder(
                 schema: $schema,
-                tableClassName: $tableClassShortName,
+                tableClass: $tableClass,
             );
         }
         $template->generate();
-        $file
-            ->setDirectives('strict_types=1')
-            ->addUse($template->getParentNamespace())
-            ->addUse(Schema::class)
-            ->addUse($entityClass)
-            ->addElement($template->getClass());
+        $file = $template->getFile();
 
         $fileState = 'new';
         if (!$filePath = $this->getClassFilePath($tableClass)) {

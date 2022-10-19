@@ -3,6 +3,10 @@
 namespace Composite\DB\Generator;
 
 use Composite\DB\AbstractTable;
+use Composite\DB\Entity\Schema;
+use Nette\PhpGenerator\Helpers;
+use Spiral\Reactor\Aggregator\Methods;
+use Spiral\Reactor\Partial\Method;
 
 class TableClassBuilder extends AbstractTableClassBuilder
 {
@@ -13,49 +17,63 @@ class TableClassBuilder extends AbstractTableClassBuilder
 
     public function generate(): void
     {
-        $this->generateGetSchema();
-        $this->generateFindOne();
-        $this->generateFindAll();
-        $this->generateCountAll();
+        $this->file
+            ->addNamespace(Helpers::extractNamespace($this->tableClass))
+            ->addUse(AbstractTable::class)
+            ->addUse(Schema::class)
+            ->addUse($this->schema->class)
+            ->addClass(Helpers::extractShortName($this->tableClass))
+            ->setExtends(AbstractTable::class)
+            ->setMethods($this->getMethods());
     }
 
-    protected function generateFindOne(): void
+    private function getMethods(): Methods
+    {
+        $methods = array_filter([
+            $this->generateGetSchema(),
+            $this->generateFindOne(),
+            $this->generateFindAll(),
+            $this->generateCountAll(),
+        ]);
+        return new Methods($methods);
+    }
+
+    protected function generateFindOne(): ?Method
     {
         if (!$primaryColumns = $this->schema->getPrimaryKeyColumns()) {
-            return;
+            return null;
         }
         $primaryColumnVars = array_map(fn ($column) => $column->name, $primaryColumns);
-        $method = $this->class->method('findByPk');
         if (count($primaryColumns) === 1) {
-            $source = 'return $this->createEntity($this->findByPkInternal(' . $this->buildVarsList($primaryColumnVars) . '));';
+            $body = 'return $this->createEntity($this->findByPkInternal(' . $this->buildVarsList($primaryColumnVars) . '));';
         } else {
-            $source = 'return $this->createEntity($this->findOneInternal(' . $this->buildVarsList($primaryColumnVars) . '));';
+            $body = 'return $this->createEntity($this->findOneInternal(' . $this->buildVarsList($primaryColumnVars) . '));';
         }
-        $method
+        $method = (new Method('findByPk'))
             ->setPublic()
-            ->setReturn('?' . $this->entityClassShortName)
-            ->setSource($source);
+            ->setReturnType($this->schema->class)
+            ->setReturnNullable()
+            ->setBody($body);
         $this->addMethodParameters($method, $primaryColumns);
+        return $method;
     }
 
-    protected function generateFindAll(): void
+    protected function generateFindAll(): Method
     {
-        $method = $this->class->method('findAll');
-        $method
+        return (new Method('findAll'))
             ->setPublic()
             ->setComment([
                 '@return ' . $this->entityClassShortName . '[]',
             ])
-            ->setReturn('array')
-            ->setSource('return $this->createEntities($this->findAllInternal());');
+            ->setReturnType('array')
+            ->setBody('return $this->createEntities($this->findAllInternal());');
     }
 
-    protected function generateCountAll(): void
+    protected function generateCountAll(): Method
     {
-        $method = $this->class->method('countAll');
-        $method
+        return (new Method('countAll'))
             ->setPublic()
-            ->setReturn('int')
-            ->setSource('return $this->countAllInternal();');
+            ->setReturnType('int')
+            ->setBody('return $this->countAllInternal();');
     }
 }

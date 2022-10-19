@@ -6,39 +6,37 @@ use Composite\DB\Entity\Columns\AbstractColumn;
 use Composite\DB\Entity\Schema;
 use Doctrine\Inflector\Rules\English\InflectorFactory;
 use Spiral\Reactor\ClassDeclaration;
+use Spiral\Reactor\FileDeclaration;
 use Spiral\Reactor\Partial\Method;
 
 abstract class AbstractTableClassBuilder
 {
-    protected readonly ClassDeclaration $class;
+    protected readonly FileDeclaration $file;
     protected readonly string $entityClassShortName;
 
     public function __construct(
         protected readonly Schema $schema,
-        string $tableClassName,
+        protected readonly string $tableClass,
     )
     {
-        $parentShortName = substr(strrchr($this->getParentNamespace(), "\\"), 1);
         $this->entityClassShortName = substr(strrchr($schema->class, "\\"), 1);
-        $this->class = new ClassDeclaration($tableClassName, $parentShortName);
+        $this->file = new FileDeclaration();
     }
 
     abstract public function getParentNamespace(): string;
     abstract public function generate(): void;
 
-    final public function getClass(): ClassDeclaration
+    final public function getFile(): FileDeclaration
     {
-        return $this->class;
+        return $this->file;
     }
 
-    protected function generateGetSchema(): void
+    protected function generateGetSchema(): Method
     {
-        $this->class
-            ->method('getSchema')
+        return (new Method('getSchema'))
             ->setProtected()
-            ->setStatic()
-            ->setReturn('Schema')
-            ->setSource('return ' . $this->entityClassShortName . '::schema();');
+            ->setReturnType(Schema::class)
+            ->setBody('return ' . $this->entityClassShortName . '::schema();');
     }
 
     protected function buildVarsList(array $vars): string
@@ -61,7 +59,7 @@ abstract class AbstractTableClassBuilder
     {
         foreach ($columns as $column) {
             $method
-                ->parameter($column->name)
+                ->addParameter($column->name)
                 ->setType($column->type);
         }
     }

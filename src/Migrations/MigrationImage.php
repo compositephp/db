@@ -6,65 +6,68 @@ use Cycle\Database\Schema\AbstractTable;
 use Cycle\Migrations\Atomizer\Atomizer;
 use Cycle\Migrations\Config\MigrationConfig;
 use Cycle\Migrations\Migration;
-use Spiral\Reactor\ClassDeclaration;
+use Spiral\Reactor\Aggregator\Methods;
 use Spiral\Reactor\FileDeclaration;
+use Spiral\Reactor\Partial\Method;
 
 class MigrationImage
 {
-    const HASH_DELIMITER = '__';
-    protected ClassDeclaration $class;
-    protected FileDeclaration $file;
-    protected ?string $database = null;
-    protected string $name;
-    protected string $content;
-    protected string $hash;
+    final const HASH_DELIMITER = '__';
+    private FileDeclaration $file;
+    private string $name;
+    private string $className;
 
     public function __construct(
         protected MigrationConfig $migrationConfig,
-        string $database
-    ) {
-        $this->class = new ClassDeclaration('newMigration', 'Migration');
-
-        $this->class->method('up')->setReturn('void')->setPublic();
-        $this->class->method('down')->setReturn('void')->setPublic();
-
-        $this->file = new FileDeclaration($migrationConfig->getNamespace());
-        $this->file->addUse(Migration::class);
-        $this->file->addElement($this->class);
-        $this->file->setNamespace('');
-
-        $this->setDatabase($database);
-    }
-
-    public function getClass(): ClassDeclaration
-    {
-        return $this->class;
-    }
+        private readonly string $database
+    ) {}
 
     public function getFile(): FileDeclaration
     {
         return $this->file;
     }
 
-    public function setDatabase(string $database): void
+    public function getClassName(): string
     {
-        $this->database = $database;
-        $this->class->constant('DATABASE')->setProtected()->setValue($database);
+        return $this->className;
     }
 
     public function build(Atomizer $atomizer): void
     {
-        $atomizer->declareChanges($this->getClass()->method('up')->getSource());
-        $atomizer->revertChanges($this->getClass()->method('down')->getSource());
+        $upMethod = (new Method('up'));
+        $downMethod = (new Method('down'));
+        $atomizer->declareChanges($upMethod);
+        $atomizer->revertChanges($downMethod);
 
-        $upContent = $this->getClass()->method('up')->getSource()->render();
-        $downContent = $this->getClass()->method('down')->getSource()->render();
-        $this->hash = md5($upContent . $downContent);
+        $hash = md5($upMethod->getBody() . $downMethod->getBody());
+        $actionNameParts = $this->getActionNameParts($atomizer);
+        $classNameParts = $this->getClassNameParts($atomizer);
+        $classNameParts[] = $hash;
 
-        $classNameParts = ['Migration', ucfirst($this->database)];
+        $actionName = substr(implode('_', $actionNameParts), 0, 128);
+
+        $this->name = $actionName . self::HASH_DELIMITER . $hash;
+        $this->className = implode('', $classNameParts);
+
+        $this->file = new FileDeclaration();
+        $this->file
+            ->addNamespace($this->migrationConfig->getNamespace())
+            ->addUse(Migration::class)
+            ->addClass($this->className)
+            ->setExtends(Migration::class)
+            ->setMethods(new Methods([$upMethod, $downMethod]))
+            ->addConstant('DATABASE', $this->database)->setProtected();
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getActionNameParts(Atomizer $atomizer): array
+    {
         $actionNameParts = [$this->database];
         foreach ($atomizer->getTables() as $table) {
-            $classNameParts[] = ucfirst($table->getName());
             if ($table->getStatus() === AbstractTable::STATUS_NEW) {
                 $actionNameParts[] = 'create_' . $table->getName();
             } elseif ($table->getStatus() === AbstractTable::STATUS_DECLARED_DROPPED) {
@@ -104,20 +107,15 @@ class MigrationImage
                 }
             }
         }
-        $actionName = substr(implode('_', $actionNameParts), 0, 128);
-        $this->name = $actionName . self::HASH_DELIMITER . $this->hash;
-
-        $classNameParts[] = $this->hash;
-        $this->class->setName(implode('', $classNameParts));
+        return $actionNameParts;
     }
 
-    public function getName(): string
+    private function getClassNameParts(Atomizer $atomizer): array
     {
-        return $this->name;
-    }
-
-    public function getHash(): string
-    {
-        return $this->hash;
+        $classNameParts = ['Migration', ucfirst($this->database)];
+        foreach ($atomizer->getTables() as $table) {
+            $classNameParts[] = ucfirst($table->getName());
+        }
+        return $classNameParts;
     }
 }
