@@ -31,6 +31,7 @@ abstract class AbstractEntity implements \JsonSerializable, \Stringable
     public static function fromArray(array $data = []): static
     {
         $schema = static::schema();
+        $class = $schema->class;
         $preparedData = $schema->castData($data);
         $constructorData = [];
         foreach ($schema->getConstructorColumns() as $column) {
@@ -41,9 +42,9 @@ abstract class AbstractEntity implements \JsonSerializable, \Stringable
         }
 
         if ($constructorData) {
-            $entity = new static(...$constructorData);
+            $entity = new $class(...$constructorData);
         } else {
-            $entity = new static();
+            $entity = new $class();
         }
         foreach ($schema->getNonConstructorColumns() as $column) {
             if (!isset($preparedData[$column->name])) {

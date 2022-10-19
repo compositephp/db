@@ -132,7 +132,9 @@ class CycleBridge
             /** @var \BackedEnum $enumClass */
             $enumClass = $column->type;
             $reflectionEnum = new \ReflectionEnum($column->type);
-            if ($reflectionEnum->getBackingType()->getName() === 'int') {
+            /** @var \ReflectionNamedType $backingType */
+            $backingType = $reflectionEnum->getBackingType();
+            if ($backingType->getName() === 'int') {
                 $cycleColumn->integer();
             } else {
                 $cycleColumn->enum(

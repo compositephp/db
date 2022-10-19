@@ -9,13 +9,13 @@ class EntityException extends \Exception
         parent::__construct($message, 0, $previous);
     }
 
-    public static function fromThrowable(\Throwable $throwable): static
+    public static function fromThrowable(\Throwable $throwable): EntityException
     {
-        return new static('', $throwable);
+        return new EntityException('', $throwable);
     }
 
-    public static function tableNotFound(string $entityClass): static
+    public static function tableNotFound(string $entityClass): EntityException
     {
-        return new self("Table attribute not defined in entity `$entityClass`");
+        return new EntityException("Table attribute not defined in entity `$entityClass`");
     }
 }

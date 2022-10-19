@@ -186,7 +186,7 @@ class SQLiteSchemaParser
     }
 
     /**
-     * @return SQLIndex
+     * @return SQLIndex[]
      */
     private function getIndexes(): array
     {
