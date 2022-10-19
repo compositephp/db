@@ -6,6 +6,7 @@ use Composite\DB\AbstractEntity;
 use Composite\DB\AbstractTable;
 use Composite\DB\CombinedTransaction;
 use Composite\DB\Exceptions\DbException;
+use Composite\DB\Exceptions\EntityException;
 use Composite\DB\Tests\Table\TestStand\Tables;
 use Composite\DB\Tests\Table\TestStand\Entities;
 
@@ -187,5 +188,20 @@ final class AbstractTableTest extends BaseTableTest
 
         $this->assertNull($autoIncrementTable->findByPk($e1->id));
         $this->assertNull($compositeTable->findOne($e2->user_id, $e2->post_id));
+    }
+
+    public function test_illegalEntitySave(): void
+    {
+        $dbm = self::getDatabaseManager();
+        $entity = new Entities\TestAutoincrementEntity(name: 'Foo');
+        $compositeTable = new Tables\TestUniqueTable($dbm);
+
+        $exceptionCatch = false;
+        try {
+            $compositeTable->save($entity);
+        } catch (EntityException $e) {
+            $exceptionCatch = true;
+        }
+        $this->assertTrue($exceptionCatch);
     }
 }

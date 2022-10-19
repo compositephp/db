@@ -32,6 +32,7 @@ abstract class AbstractTable
      */
     public function save(AbstractEntity &$entity): void
     {
+        $this->checkEntityIsLegal($entity);
         if ($entity->isNew()) {
             $insertData = $entity->toArray();
             $returnedValue = $this->db
@@ -80,6 +81,7 @@ abstract class AbstractTable
      */
     public function delete(AbstractEntity &$entity): void
     {
+        $this->checkEntityIsLegal($entity);
         if ($this->getSchema()->isSoftDelete) {
             if (method_exists($entity, 'delete')) {
                 $entity->delete();
@@ -217,6 +219,19 @@ abstract class AbstractTable
     {
         if ($this->getSchema()->isSoftDelete && !isset($condition['deleted_at'])) {
             $condition['deleted_at'] = null;
+        }
+    }
+
+    private function checkEntityIsLegal(AbstractEntity $entity): void
+    {
+        if ($entity::class !== $this->getSchema()->class) {
+            throw new EntityException(
+                sprintf('Illegal entity `%s` passed to `%s`, only `%s` is allowed',
+                    $entity::class,
+                    $this::class,
+                    $this->getSchema()->class,
+                )
+            );
         }
     }
 }
