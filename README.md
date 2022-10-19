@@ -22,7 +22,7 @@ Composite DB solves multiple problems:
 just use native php class syntax.
 * **Speed** - it's 1.5x faster in pure SQL queries mode and many times faster in automatic caching mode.
 * **Easy caching** - gives you CRUD operations caching out of the box and in general its much easier to work with cached "selects".
-* **Mixed return types** - Composite DB forces you to be more strict typed and makes your IDE happy.
+* **Strict types** - Composite DB forces you to be more strict typed and makes your IDE happy.
 * **Hydration** - you can serialize your Entities to plain array or json and deserialize them back.
 * **Flexibility** - gives you more freedom to extend Repositories, for example its easier to build sharding tables.
 * **Code generation** - you can generate Entity and Repository classes from your SQL tables.
