@@ -6,6 +6,7 @@ use Composite\DB\Generator\EntityClassBuilder;
 use Composite\DB\Generator\EnumClassBuilder;
 use Composite\DB\Generator\Schema\SQLEnum;
 use Composite\DB\Generator\Schema\SQLSchema;
+use Composite\DB\Helpers\ClassHelper;
 use Cycle\Database\DatabaseProviderInterface;
 use Cycle\Database\TableInterface;
 use Doctrine\Inflector\Rules\English\InflectorFactory;
@@ -92,8 +93,8 @@ class GenerateEntityCommand extends Command
             return null;
         }
         $enumShortClassName = ucfirst((new InflectorFactory())->build()->camelize($name));
-        $entityNamespace = preg_replace('/\w+$/', '', $entityClass);
-        $proposedClass = $entityNamespace . 'Enums\\' . $enumShortClassName;
+        $entityNamespace = ClassHelper::extractNamespace($entityClass);
+        $proposedClass = $entityNamespace . '\\Enums\\' . $enumShortClassName;
         $enumClass = $this->ask(
             $input,
             $output,

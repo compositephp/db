@@ -2,19 +2,34 @@
 
 namespace Composite\DB\Generator;
 
+use Spiral\Reactor\Aggregator\EnumCases;
+use Spiral\Reactor\FileDeclaration;
+use Spiral\Reactor\Partial\EnumCase;
+
 class EnumClassBuilder
 {
     public function __construct(
         private readonly string $enumClass,
         private readonly array $cases,
-    ) {}
+    )
+    {
+    }
 
     /**
      * @throws \Exception
      */
     public function getClassContent(): string
     {
-        return $this->renderTemplate('EnumTemplate', $this->getVars());
+        $enumCases = [];
+        foreach ($this->cases as $case) {
+            $enumCases[] = new EnumCase($case);
+        }
+        $file = new FileDeclaration();
+        $file
+            ->addEnum($this->enumClass)
+            ->setCases(new EnumCases($enumCases));
+
+        return $file->render();
     }
 
     /**
@@ -31,24 +46,5 @@ class EnumClassBuilder
             'enumClassShortname' => $matches[2],
             'cases' => $this->cases,
         ];
-    }
-
-    private function renderTemplate(string $templateName, array $variables = []): string
-    {
-        $filePath = implode(
-            DIRECTORY_SEPARATOR,
-            [
-                __DIR__,
-                'Templates',
-                "$templateName.php",
-            ]
-        );
-        if (!file_exists($filePath)) {
-            throw new \Exception("File `$filePath` not found");
-        }
-        extract($variables, EXTR_SKIP);
-        ob_start();
-        include $filePath;
-        return ob_get_clean();
     }
 }
