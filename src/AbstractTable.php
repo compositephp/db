@@ -114,7 +114,7 @@ abstract class AbstractTable
     /**
      * @throws \Throwable
      */
-    public function transaction(callable $callback, ?string $isolationLevel = null)
+    public function transaction(callable $callback, ?string $isolationLevel = null): mixed
     {
         return $this->db->transaction($callback, $isolationLevel);
     }

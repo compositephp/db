@@ -3,7 +3,7 @@
 namespace Composite\DB\Tests\Entity\Columns;
 
 use Composite\DB\AbstractEntity;
-use Composite\DB\DateTimeHelper;
+use Composite\DB\Helpers\DateTimeHelper;
 
 final class DateTimeColumnTest extends \PHPUnit\Framework\TestCase
 {

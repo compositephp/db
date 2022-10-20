@@ -24,8 +24,8 @@ abstract class AbstractEntity implements \JsonSerializable, \Stringable
     }
 
     /**
-     * @param array $data
-     * @return static
+     * @param array<string, mixed> $data
+     * @psalm-suppress MoreSpecificReturnType
      * @throws EntityException
      */
     public static function fromArray(array $data = []): static
@@ -41,11 +41,8 @@ abstract class AbstractEntity implements \JsonSerializable, \Stringable
             $constructorData[$column->name] = $preparedData[$column->name];
         }
 
-        if ($constructorData) {
-            $entity = new $class(...$constructorData);
-        } else {
-            $entity = new $class();
-        }
+        /** @var AbstractEntity $entity */
+        $entity = $constructorData ? new $class(...$constructorData) : new $class();
         foreach ($schema->getNonConstructorColumns() as $column) {
             if (!isset($preparedData[$column->name])) {
                 continue;
@@ -62,6 +59,7 @@ abstract class AbstractEntity implements \JsonSerializable, \Stringable
             }
         }
         $entity->_initialColumns = $entity->toArray();
+        /** @psalm-suppress LessSpecificReturnStatement */
         return $entity;
     }
 
@@ -85,7 +83,7 @@ abstract class AbstractEntity implements \JsonSerializable, \Stringable
     public function getChangedColumns(): array
     {
         $data = $this->toArray();
-        if ($this->isNew()) {
+        if ($this->_initialColumns === null) {
             return $data;
         }
         $changed_properties = [];

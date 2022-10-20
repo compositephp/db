@@ -21,7 +21,8 @@
     },
     "require-dev": {
         "kodus/file-cache": "^2.0",
-        "phpunit/phpunit": "^9.5"
+        "phpunit/phpunit": "^9.5",
+        "vimeo/psalm": "^4.29"
     },
     "autoload": {
         "psr-4": {

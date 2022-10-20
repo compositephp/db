@@ -5,7 +5,7 @@ namespace Composite\DB\Generator;
 use Composite\DB\AbstractCachedTable;
 use Composite\DB\AbstractEntity;
 use Composite\DB\Entity\Schema;
-use Nette\PhpGenerator\Helpers;
+use Composite\DB\Helpers\ClassHelper;
 use Spiral\Reactor\Aggregator\Methods;
 use Spiral\Reactor\Partial\Method;
 
@@ -19,12 +19,12 @@ class CachedTableClassBuilder extends AbstractTableClassBuilder
     public function generate(): void
     {
         $this->file
-            ->addNamespace(Helpers::extractNamespace($this->tableClass))
+            ->addNamespace(ClassHelper::extractNamespace($this->tableClass))
             ->addUse(AbstractEntity::class)
             ->addUse(AbstractCachedTable::class)
             ->addUse(Schema::class)
             ->addUse($this->schema->class)
-            ->addClass(Helpers::extractShortName($this->tableClass))
+            ->addClass(ClassHelper::extractShortName($this->tableClass))
             ->setExtends(AbstractCachedTable::class)
             ->setMethods($this->getMethods());
     }

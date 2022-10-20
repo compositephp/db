@@ -7,6 +7,7 @@ use Composite\DB\Entity\Attributes;
 abstract class AbstractColumn
 {
     public function __construct(
+        /** @psalm-var non-empty-string $name */
         public readonly string $name,
         public readonly string $type,
         public readonly bool $hasDefaultValue,

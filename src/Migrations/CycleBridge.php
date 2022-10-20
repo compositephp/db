@@ -3,10 +3,11 @@
 namespace Composite\DB\Migrations;
 
 use Composite\DB\AbstractEntity;
-use Composite\DB\DateTimeHelper;
 use Composite\DB\Entity\Attributes;
 use Composite\DB\Entity\Columns;
 use Composite\DB\Entity\Schema;
+use Composite\DB\Exceptions\EntityException;
+use Composite\DB\Helpers\DateTimeHelper;
 use Cycle\Database\DatabaseProviderInterface;
 use Cycle\Database\Driver\Driver;
 use Cycle\Database\Driver\MySQL;
@@ -19,27 +20,32 @@ use Cycle\Database\Schema\State;
 
 class CycleBridge
 {
+    /** @psalm-var  non-empty-string $dbName */
     public readonly string $dbName;
 
     private \ReflectionClass $reflectionClass;
     private Schema $schema;
-    private string $tableName;
+    /** @psalm-var non-empty-string $tableName */
+    private readonly string $tableName;
 
+    /**
+     * @throws EntityException
+     */
     public function __construct(\ReflectionClass $reflectionClass)
     {
         $this->reflectionClass = $reflectionClass;
-        $this->schema = Schema::build($reflectionClass->name);
+        /** @psalm-var class-string $className */
+        $className = $reflectionClass->name;
+        $this->schema = Schema::build($className);
 
-        if (!$this->schema->getTableName() || !$this->schema->getDatabaseName()) {
-            throw new \Exception("Entity {$reflectionClass->name} must have attribute " . Attributes\Table::class);
-        }
-        $this->tableName = $this->schema->getTableName();
-        $this->dbName = $this->schema->getDatabaseName();
+        $this->tableName = $this->schema->getTableName() ?: throw new EntityException("Entity {$reflectionClass->name} must have attribute " . Attributes\Table::class);
+        $this->dbName = $this->schema->getDatabaseName() ?: throw new EntityException("Entity {$reflectionClass->name} must have attribute " . Attributes\Table::class);
     }
 
     public function generateCycleTable(DatabaseProviderInterface $databaseProvider): AbstractCycleTable
     {
         $db = $databaseProvider->database($this->dbName);
+        /** @var Driver $driver */
         $driver = $db->getDriver();
 
         $cycleTable = match ($driver::class) {
@@ -76,7 +82,9 @@ class CycleBridge
         $cycleColumn->nullable($column->isNullable);
 
         if ($column instanceof Columns\CastableColumn) {
-            $castableReflectionClass = new \ReflectionClass($column->type);
+            /** @psalm-var class-string $classString */
+            $classString = $column->type;
+            $castableReflectionClass = new \ReflectionClass($classString);
             $returnType = $castableReflectionClass->getMethod('uncast')->getReturnType();
             $isString = false;
             if ($returnType) {
@@ -162,7 +170,7 @@ class CycleBridge
         }
         $defaultValue = null;
         $defaultValueDefined = false;
-        foreach ($this->reflectionClass->getConstructor()->getParameters() as $parameter) {
+        foreach ($this->reflectionClass->getConstructor()?->getParameters() ?? [] as $parameter) {
             if ($parameter->getName() === $column->name && $parameter->isPromoted() && $parameter->isDefaultValueAvailable()) {
                 $defaultValue = $parameter->getDefaultValue();
                 $defaultValueDefined = true;
@@ -213,10 +221,8 @@ class CycleBridge
 
     private function getMigrationSize(Columns\AbstractColumn $column): int
     {
-        if ($columnAttribute = $this->getColumnAttribute($column)) {
-            return $columnAttribute->size;
-        }
-        return Config::DEFAULT_STRING_SIZE;
+        $columnAttribute = $this->getColumnAttribute($column);
+        return $columnAttribute?->size ?? Config::DEFAULT_STRING_SIZE;
     }
 
     private function getMigrationPrecisionScale(Columns\AbstractColumn $column): ?array
@@ -245,7 +251,10 @@ class CycleBridge
      */
     private function getPrimaryKeys(): array
     {
-        $primaryKeys = array_keys($this->schema->getPrimaryKeyColumns());
+        $primaryKeys = array_map(
+            fn (Columns\AbstractColumn $column): string => $column->name,
+            $this->schema->getPrimaryKeyColumns()
+        );
         if (!$this->schema->getAutoIncrementColumn() && $this->schema->isSoftDelete) {
             $primaryKeys[] = 'deleted_at';
         }
@@ -264,7 +273,7 @@ class CycleBridge
         $result = [];
         /** @var Attributes\Index $index */
         foreach ($indexes as $index) {
-            $indexName = $index->name ?? $index->generateName($state->getName());
+            $indexName = $index->name ?: $index->generateName($state->getName());
             $cycleIndex = match ($driver::class) {
                 MySQL\MySQLDriver::class => new MySQL\Schema\MySQLIndex($state->getName(), $indexName),
                 SQLite\SQLiteDriver::class => new SQLite\Schema\SQLiteIndex($state->getName(), $indexName),

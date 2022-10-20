@@ -27,7 +27,7 @@ class SQLiteSchemaParser
     {
         $columns = $enums = $primaryKeys = $indexes = [];
         $columnsStarted = false;
-        $tableName = null;
+        $tableName = '';
         $lines = array_map(
             fn ($line) => trim(preg_replace("/\s+/", " ", $line)),
             explode("\n", $this->tableSql),
@@ -103,7 +103,7 @@ class SQLiteSchemaParser
         }
         $type = strtolower($matches[1]);
         return match ($type) {
-            'integer' => ColumnType::Integer,
+            'integer', 'int' => ColumnType::Integer,
             'real' => ColumnType::Float,
             'timestamp' => ColumnType::Datetime,
             'enum' => ColumnType::Enum,

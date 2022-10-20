@@ -50,24 +50,26 @@ class MigrateCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->input = $input;
-        $this->output = $output;
-        $entityClass = $this->input->getArgument('entity');
+        $entityClass = $input->getArgument('entity');
         $generate = $input->getOption('generate');
         $migrate = $input->getOption('migrate');
         $anyOptionProvided = $migrate || $generate;
 
         if ($entityClass) {
             if (!class_exists($entityClass)) {
-                return $this->showError("Class `{$entityClass}` does not exists");
+                return $this->showError($output, "Class `{$entityClass}` does not exists");
             }
             if (!is_subclass_of($entityClass, AbstractEntity::class)) {
-                return $this->showError("Class `{$entityClass}` must be subclass of " . AbstractEntity::class);
+                return $this->showError($output, "Class `{$entityClass}` must be subclass of " . AbstractEntity::class);
             }
             $generate = true;
         }
         if (!$generate) {
-            $generate = $this->ask(new ConfirmationQuestion('Do you want to generate migrations?[y/n]: '));
+            $generate = $this->ask(
+                $input,
+                $output,
+                new ConfirmationQuestion('Do you want to generate migrations?[y/n]: ')
+            );
         }
         if ($generate) {
             $newMigrationGenerated = false;
@@ -79,52 +81,57 @@ class MigrateCommand extends Command
             foreach ($classes as $class) {
                 if ($filename = $this->generateTableMigration($class)) {
                     $newMigrationGenerated = true;
-                    $this->showSuccess("Migration `" . basename($filename) . "` successfully generated");
+                    $this->showSuccess($output, "Migration `" . basename($filename) . "` successfully generated");
                 }
             }
             if (!$newMigrationGenerated) {
-                $this->showSuccess('No new migrations were generated');
+                $this->showSuccess($output, 'No new migrations were generated');
             }
         }
         if (!$anyOptionProvided) {
-            $migrate = $this->ask(new ConfirmationQuestion('Do you want to apply migrations?[y/n]: '));
+            $migrate = $this->ask(
+                $input,
+                $output,
+                new ConfirmationQuestion('Do you want to apply migrations?[y/n]: ')
+            );
         }
         if ($migrate) {
             $newMigrationApplied = false;
             do {
                 if ($migration = $this->migrator->run()) {
-                    $this->showSuccess("Migration `" . $migration->getState()->getName() . "` successfully applied");
+                    $this->showSuccess($output, "Migration `" . $migration->getState()->getName() . "` successfully applied");
                     $newMigrationApplied = true;
                 }
             } while ($migration !== null);
             if (!$newMigrationApplied) {
-                $this->showSuccess('No new migrations were applied');
+                $this->showSuccess($output, 'No new migrations were applied');
             }
         }
         return Command::SUCCESS;
     }
 
+    /**
+     * @throws \Composite\DB\Exceptions\EntityException
+     */
     private function generateTableMigration(\ReflectionClass $reflectionClass): ?string
     {
-        try {
-            $bridge = new CycleBridge($reflectionClass);
-            $table = $bridge->generateCycleTable($this->dbProvider);
-        } catch (\Exception $e) {
-            $this->showError($e->getMessage());
-            return null;
-        }
+        $bridge = new CycleBridge($reflectionClass);
+        $table = $bridge->generateCycleTable($this->dbProvider);
         if (!$table->getComparator()->hasChanges()) {
             return null;
         }
         $atomizer = new Atomizer\Atomizer(new Atomizer\Renderer());
         $atomizer->addTable($table);
-        $image = new MigrationImage($this->migrationConfig, $bridge->dbName);
-        $image->build($atomizer);
+        $image = new MigrationImage(
+            migrationConfig: $this->migrationConfig,
+            atomizer: $atomizer,
+            database: $bridge->dbName,
+        );
 
         return $this->migrator->getRepository()->registerMigration(
-            $image->getName(),
-            $image->getClassName(),
-            $image->getFile()->render()
+            $image->name,
+            $image->className,
+            $image->file->render()
         );
     }
 }

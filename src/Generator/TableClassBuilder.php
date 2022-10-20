@@ -4,7 +4,7 @@ namespace Composite\DB\Generator;
 
 use Composite\DB\AbstractTable;
 use Composite\DB\Entity\Schema;
-use Nette\PhpGenerator\Helpers;
+use Composite\DB\Helpers\ClassHelper;
 use Spiral\Reactor\Aggregator\Methods;
 use Spiral\Reactor\Partial\Method;
 
@@ -18,11 +18,11 @@ class TableClassBuilder extends AbstractTableClassBuilder
     public function generate(): void
     {
         $this->file
-            ->addNamespace(Helpers::extractNamespace($this->tableClass))
+            ->addNamespace(ClassHelper::extractNamespace($this->tableClass))
             ->addUse(AbstractTable::class)
             ->addUse(Schema::class)
             ->addUse($this->schema->class)
-            ->addClass(Helpers::extractShortName($this->tableClass))
+            ->addClass(ClassHelper::extractShortName($this->tableClass))
             ->setExtends(AbstractTable::class)
             ->setMethods($this->getMethods());
     }

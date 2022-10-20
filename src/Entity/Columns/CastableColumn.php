@@ -6,7 +6,7 @@ use Composite\DB\Entity\CastableInterface;
 
 class CastableColumn extends AbstractColumn
 {
-    public function cast(mixed $dbValue): CastableInterface
+    public function cast(mixed $dbValue): ?CastableInterface
     {
         /** @var CastableInterface $class */
         $class = $this->type;
@@ -14,7 +14,7 @@ class CastableColumn extends AbstractColumn
     }
 
     /**
-     * @param CastableInterface $entityValue
+     * @param CastableInterface|mixed $entityValue
      */
     public function uncast(mixed $entityValue): int|string|null
     {

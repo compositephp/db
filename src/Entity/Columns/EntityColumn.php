@@ -26,7 +26,7 @@ class EntityColumn extends AbstractColumn
     }
 
     /**
-     * @param AbstractEntity $entityValue
+     * @param AbstractEntity|mixed $entityValue
      * @throws EntityException
      */
     public function uncast(mixed $entityValue): string

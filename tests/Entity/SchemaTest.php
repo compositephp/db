@@ -32,21 +32,21 @@ final class SchemaTest extends \PHPUnit\Framework\TestCase
         $this->assertNull($schema->getDatabaseName());
         $this->assertNull($schema->getTableName());
         $this->assertCount(1, $schema->getPrimaryKeyColumns());
-        $this->assertSame($schema->columns['id'], $schema->getAutoIncrementColumn());
+        $this->assertSame($schema->getColumn('id'), $schema->getAutoIncrementColumn());
         $this->assertTrue($schema->hasAutoIncrementPrimaryKey());
         $this->assertSame(
             [
-                'id' => $schema->columns['id'],
-                'deleted_at' =>$schema->columns['deleted_at'],
+                $schema->getColumn('id'),
+                $schema->getColumn('deleted_at'),
             ],
-            $schema->getNonConstructorColumns()
+            array_values($schema->getNonConstructorColumns())
         );
         $this->assertSame(
             [
-                'str' => $schema->columns['str'],
-                'number' =>$schema->columns['number'],
+                $schema->getColumn('str'),
+                $schema->getColumn('number'),
             ],
-            $schema->getConstructorColumns()
+            array_values($schema->getConstructorColumns())
         );
     }
 

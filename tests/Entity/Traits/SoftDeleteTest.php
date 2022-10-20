@@ -3,7 +3,6 @@
 namespace Composite\DB\Tests\Entity\Traits;
 
 use Composite\DB\AbstractEntity;
-use Composite\DB\DateTimeHelper;
 use Composite\DB\Entity\Traits\SoftDelete;
 
 final class SoftDeleteTest extends \PHPUnit\Framework\TestCase

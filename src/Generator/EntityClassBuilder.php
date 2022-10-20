@@ -3,17 +3,18 @@
 namespace Composite\DB\Generator;
 
 use Composite\DB\AbstractEntity;
-use Composite\DB\DateTimeHelper;
 use Composite\DB\Generator\Schema\ColumnType;
-use Composite\DB\Generator\Schema\SQLIndex;
-use Composite\DB\Generator\Schema\SQLSchema;
 use Composite\DB\Generator\Schema\SQLColumn;
+use Composite\DB\Generator\Schema\SQLSchema;
+use Composite\DB\Helpers\DateTimeHelper;
 
 class EntityClassBuilder
 {
+    /** @var string[] */
     private array $useNamespaces = [
         AbstractEntity::class,
     ];
+    /** @var string[] */
     private array $useAttributes = [
         'Table',
     ];
@@ -34,6 +35,7 @@ class EntityClassBuilder
     }
 
     /**
+     * @return array<string, mixed>
      * @throws \Exception
      */
     private function getVars(): array
@@ -140,7 +142,7 @@ class EntityClassBuilder
         if ($column->isNullable) {
             $type = '?' . $type;
         }
-        return  $type;
+        return $type;
     }
 
     public function getDefaultValue(SQLColumn $column): mixed
@@ -230,7 +232,7 @@ class EntityClassBuilder
                 foreach ($index->sort as $key => $direction) {
                     $sortParts[] = "'$key' => '$direction'";
                 }
-                $properties[] = 'sort: ['. implode(', ', $sortParts) . ']';
+                $properties[] = 'sort: [' . implode(', ', $sortParts) . ']';
             }
             if ($index->name) {
                 $properties[] = "name: '" . $index->name . "'";
@@ -251,6 +253,9 @@ class EntityClassBuilder
                 "$templateName.php",
             ]
         );
+        if (!file_exists($filePath)) {
+            throw new \Exception("File `$filePath` not found");
+        }
         extract($variables, EXTR_SKIP);
         ob_start();
         include $filePath;

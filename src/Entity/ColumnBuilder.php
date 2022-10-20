@@ -23,11 +23,12 @@ class ColumnBuilder
     /**
      * @return Columns\AbstractColumn[]
      * @throws EntityException
+     * @psalm-suppress MoreSpecificReturnType
      */
     public static function fromReflection(\ReflectionClass $reflectionClass): array
     {
         $result = $constructorColumns = $constructorDefaultValues = [];
-        foreach ($reflectionClass->getConstructor()->getParameters() as $reflectionParameter) {
+        foreach ($reflectionClass->getConstructor()?->getParameters() ?? [] as $reflectionParameter) {
             $constructorColumns[$reflectionParameter->getName()] = true;
             if ($reflectionParameter->isPromoted() && $reflectionParameter->isDefaultValueAvailable()) {
                 $constructorDefaultValues[$reflectionParameter->getName()] = $reflectionParameter->getDefaultValue();
@@ -43,7 +44,7 @@ class ColumnBuilder
                 throw new EntityException("Property `{$property->name}` must have named type");
             }
             $typeName = $type->getName();
-            /** @var Columns\AbstractColumn $columnClass */
+            /** @psalm-var class-string<Columns\AbstractColumn>|null $columnClass */
             $columnClass = self::PRIMITIVE_COLUMN_MAP[$typeName] ?? null;
 
             if (!$columnClass && class_exists($typeName)) {
@@ -83,7 +84,8 @@ class ColumnBuilder
                     $strict = true;
                 }
             }
-            $result[$property->getName()] = new $columnClass(
+            //see AbstractColumn __constructor
+            $result[] = new $columnClass(
                 name: $property->getName(),
                 type: $typeName,
                 hasDefaultValue: $hasDefaultValue,
@@ -95,6 +97,7 @@ class ColumnBuilder
                 primaryKey: $primaryKey,
             );
         }
+        /** @psalm-suppress LessSpecificReturnStatement */
         return $result;
     }
 }

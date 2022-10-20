@@ -33,7 +33,7 @@ class SQLColumn
     public function getColumnAttributeProperties(): array
     {
         $result = [];
-        if (!$this->sizeIsDefault()) {
+        if ($this->size && !$this->sizeIsDefault()) {
             $result[] = 'size: ' . $this->size;
         }
         if ($this->precision) {

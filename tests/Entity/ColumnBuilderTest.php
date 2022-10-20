@@ -4,6 +4,7 @@ namespace Composite\DB\Tests\Entity;
 
 use Composite\DB\AbstractEntity;
 use Composite\DB\Entity\Attributes;
+use Composite\DB\Entity\Columns\AbstractColumn;
 
 final class ColumnBuilderTest extends \PHPUnit\Framework\TestCase
 {
@@ -35,10 +36,11 @@ final class ColumnBuilderTest extends \PHPUnit\Framework\TestCase
     {
         $schema = $entity::schema();
         foreach ($expected as $name) {
-            $this->assertArrayHasKey($name, $schema->columns);
-            $this->assertSame($name, $schema->columns[$name]->name);
+            $this->assertNotNull($schema->getColumn($name));
+            $this->assertSame($name, $schema->getColumn($name)?->name);
         }
-        foreach (array_keys($schema->columns) as $columnName) {
+        $columnNames = array_map(fn (AbstractColumn $column): string => $column->name, $schema->columns);
+        foreach ($columnNames as $columnName) {
             $this->assertContains($columnName, $expected);
         }
     }
@@ -73,8 +75,8 @@ final class ColumnBuilderTest extends \PHPUnit\Framework\TestCase
     {
         $schema = $entity::schema();
         foreach ($expected as $name => $expectedType) {
-            $this->assertArrayHasKey($name, $schema->columns);
-            $this->assertSame($expectedType, $schema->columns[$name]->type);
+            $this->assertNotNull($schema->getColumn($name));
+            $this->assertSame($expectedType, $schema->getColumn($name)?->type);
         }
     }
 
@@ -107,8 +109,8 @@ final class ColumnBuilderTest extends \PHPUnit\Framework\TestCase
     {
         $schema = $class::schema();
         foreach ($expected as $name => $expectedHasDefaultValue) {
-            $this->assertArrayHasKey($name, $schema->columns);
-            $this->assertSame($expectedHasDefaultValue, $schema->columns[$name]->hasDefaultValue);
+            $this->assertNotNull($schema->getColumn($name));
+            $this->assertSame($expectedHasDefaultValue, $schema->getColumn($name)?->hasDefaultValue);
         }
     }
 
@@ -151,10 +153,10 @@ final class ColumnBuilderTest extends \PHPUnit\Framework\TestCase
     {
         $schema = $entity::schema();
         foreach ($expected as $name => $expectedDefaultValue) {
-            $this->assertArrayHasKey($name, $schema->columns);
-            $this->assertTrue($schema->columns[$name]->hasDefaultValue);
+            $this->assertNotNull($schema->getColumn($name));
+            $this->assertTrue($schema->getColumn($name)?->hasDefaultValue);
 
-            $actualDefaultValue = $schema->columns[$name]->defaultValue;
+            $actualDefaultValue = $schema->getColumn($name)?->defaultValue;
             if ($expectedDefaultValue instanceof \DateTimeInterface) {
                 $this->assertSame(0, (int)$expectedDefaultValue->diff($actualDefaultValue)->format('%i'));
             } elseif ($expectedDefaultValue instanceof \stdClass) {
@@ -197,8 +199,8 @@ final class ColumnBuilderTest extends \PHPUnit\Framework\TestCase
     {
         $schema = $class::schema();
         foreach ($expected as $name => $expectedIsNullable) {
-            $this->assertArrayHasKey($name, $schema->columns);
-            $this->assertSame($expectedIsNullable, $schema->columns[$name]->isNullable);
+            $this->assertNotNull($schema->getColumn($name));
+            $this->assertSame($expectedIsNullable, $schema->getColumn($name)?->isNullable);
         }
     }
 
@@ -255,8 +257,8 @@ final class ColumnBuilderTest extends \PHPUnit\Framework\TestCase
     {
         $schema = $entity::schema();
         foreach ($expected as $name => $expectedIsConstructorPromoted) {
-            $this->assertArrayHasKey($name, $schema->columns);
-            $this->assertSame($expectedIsConstructorPromoted, $schema->columns[$name]->isConstructorPromoted);
+            $this->assertNotNull($schema->getColumn($name));
+            $this->assertSame($expectedIsConstructorPromoted, $schema->getColumn($name)?->isConstructorPromoted);
         }
     }
 
@@ -267,8 +269,8 @@ final class ColumnBuilderTest extends \PHPUnit\Framework\TestCase
     {
         $schema = $entity::schema();
         foreach ($expected as $name => $expectedIsReadOnly) {
-            $this->assertArrayHasKey($name, $schema->columns);
-            $this->assertSame($expectedIsReadOnly, $schema->columns[$name]->isReadOnly);
+            $this->assertNotNull($schema->getColumn($name));
+            $this->assertSame($expectedIsReadOnly, $schema->getColumn($name)?->isReadOnly);
         }
     }
 
@@ -304,8 +306,8 @@ final class ColumnBuilderTest extends \PHPUnit\Framework\TestCase
     {
         $schema = $entity::schema();
         foreach ($expected as $name => $expectedIsStrict) {
-            $this->assertArrayHasKey($name, $schema->columns);
-            $this->assertSame($expectedIsStrict, $schema->columns[$name]->isStrict);
+            $this->assertNotNull($schema->getColumn($name));
+            $this->assertSame($expectedIsStrict, $schema->getColumn($name)?->isStrict);
         }
     }
 
@@ -343,11 +345,11 @@ final class ColumnBuilderTest extends \PHPUnit\Framework\TestCase
          * @var Attributes\PrimaryKey|null $expectedPrimaryKey
          */
         foreach ($expected as $name => $expectedPrimaryKey) {
-            $this->assertArrayHasKey($name, $schema->columns);
+            $this->assertNotNull($schema->getColumn($name));
             if ($expectedPrimaryKey) {
-                $this->assertSame($expectedPrimaryKey->autoIncrement, $schema->columns[$name]->primaryKey->autoIncrement);
+                $this->assertSame($expectedPrimaryKey->autoIncrement, $schema->getColumn($name)?->primaryKey->autoIncrement);
             } else {
-                $this->assertNull($schema->columns[$name]->primaryKey);
+                $this->assertNull($schema->getColumn($name)?->primaryKey);
             }
         }
     }

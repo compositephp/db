@@ -2,8 +2,8 @@
 
 namespace Composite\DB\Tests\Entity\TestStand;
 
-use Composite\DB\DateTimeHelper;
 use Composite\DB\Entity\CastableInterface;
+use Composite\DB\Helpers\DateTimeHelper;
 
 class TestCastableIntObject extends \DateTime implements CastableInterface
 {

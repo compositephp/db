@@ -18,7 +18,7 @@ class BackedEnumColumn extends AbstractColumn
     }
 
     /**
-     * @param \BackedEnum $entityValue
+     * @param \BackedEnum|mixed $entityValue
      */
     public function uncast(mixed $entityValue): int|string
     {

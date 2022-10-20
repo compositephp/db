@@ -43,6 +43,9 @@ class EnumClassBuilder
                 "$templateName.php",
             ]
         );
+        if (!file_exists($filePath)) {
+            throw new \Exception("File `$filePath` not found");
+        }
         extract($variables, EXTR_SKIP);
         ob_start();
         include $filePath;

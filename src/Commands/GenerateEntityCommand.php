@@ -45,13 +45,13 @@ class GenerateEntityCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->input = $input;
-        $this->output = $output;
-        $dbName = $this->input->getArgument('db');
+        $dbName = $input->getArgument('db');
         $db = $this->dbProvider->database($dbName);
 
-        if (!$tableName = $this->input->getArgument('table')) {
+        if (!$tableName = $input->getArgument('table')) {
             $tableName = $this->ask(
+                $input,
+                $output,
                 new ChoiceQuestion(
                     'Pick Table: ',
                     array_map(
@@ -62,46 +62,50 @@ class GenerateEntityCommand extends Command
             );
         }
         if (!$db->table($tableName)->exists()) {
-            return $this->showError("Table `$tableName` does not exist");
+            return $this->showError($output, "Table `$tableName` does not exist");
         }
-        if (!$entityClass = $this->input->getArgument('entity')) {
-            $entityClass = $this->ask(new Question('Enter entity full class name: '));
+        if (!$entityClass = $input->getArgument('entity')) {
+            $entityClass = $this->ask($input, $output, new Question('Enter entity full class name: '));
         }
         $entityClass = str_replace('\\\\', '\\', $entityClass);
 
         $schema = SQLSchema::generate($db, $tableName);
         $enums = [];
         foreach ($schema->enums as $columnName => $sqlEnum) {
-            if ($enumClass = $this->generateEnum($entityClass, $sqlEnum)) {
+            if ($enumClass = $this->generateEnum($input, $output, $entityClass, $sqlEnum)) {
                 $enums[$columnName] = $enumClass;
             }
         }
         $entityBuilder = new EntityClassBuilder($schema, $dbName, $entityClass, $enums);
         $content = $entityBuilder->getClassContent();
 
-        $this->saveClassToFile($entityClass, $content);
+        $this->saveClassToFile($input, $output, $entityClass, $content);
         return Command::SUCCESS;
     }
 
-    private function generateEnum(string $entityClass, SQLEnum $enum): ?string
+    private function generateEnum(InputInterface $input, OutputInterface $output, string $entityClass, SQLEnum $enum): ?string
     {
         $name = $enum->name;
         $values = $enum->values;
-        $this->showAlert("Found enum `$name` with values [" . implode(', ', $values) . "]");
-        if (!$this->ask(new ConfirmationQuestion('Do you want to generate Enum class?[y/n]: '))) {
+        $this->showAlert($output, "Found enum `$name` with values [" . implode(', ', $values) . "]");
+        if (!$this->ask($input, $output, new ConfirmationQuestion('Do you want to generate Enum class?[y/n]: '))) {
             return null;
         }
         $enumShortClassName = ucfirst((new InflectorFactory())->build()->camelize($name));
         $entityNamespace = preg_replace('/\w+$/', '', $entityClass);
         $proposedClass = $entityNamespace . 'Enums\\' . $enumShortClassName;
-        $enumClass = $this->ask(new Question("Enter enum full class name [skip to use $proposedClass]: "));
+        $enumClass = $this->ask(
+            $input,
+            $output,
+            new Question("Enter enum full class name [skip to use $proposedClass]: ")
+        );
         if (!$enumClass) {
             $enumClass = $proposedClass;
         }
         $enumClassBuilder = new EnumClassBuilder($enumClass, $values);
 
         $content = $enumClassBuilder->getClassContent();
-        if (!$this->saveClassToFile($enumClass, $content)) {
+        if (!$this->saveClassToFile($input, $output, $enumClass, $content)) {
             return null;
         }
         return $enumClass;

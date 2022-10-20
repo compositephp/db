@@ -3,7 +3,7 @@
 namespace Composite\DB\Tests\Entity;
 
 use Composite\DB\AbstractEntity;
-use Composite\DB\DateTimeHelper;
+use Composite\DB\Helpers\DateTimeHelper;
 
 final class AbstractEntityTest extends \PHPUnit\Framework\TestCase
 {

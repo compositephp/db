@@ -25,7 +25,7 @@ class UnitEnumColumn extends AbstractColumn
     }
 
     /**
-     * @param \UnitEnum $entityValue
+     * @param \UnitEnum|mixed $entityValue
      */
     public function uncast(mixed $entityValue): string
     {

@@ -12,47 +12,30 @@ use Symfony\Component\Console\Question\Question;
 
 trait CommandHelperTrait
 {
-    protected InputInterface $input;
-    protected OutputInterface $output;
-    private ?QuestionHelper $questionHelper = null;
-
-    private function showSuccess(string $text): int
+    private function showSuccess(OutputInterface $output, string $text): int
     {
-        $this->output->writeln("<fg=green>$text</fg=green>");
+        $output->writeln("<fg=green>$text</fg=green>");
         return Command::SUCCESS;
     }
 
-    private function showAlert(string $text): int
+    private function showAlert(OutputInterface $output, string $text): int
     {
-        $this->output->writeln("<fg=yellow>$text</fg=yellow>");
+        $output->writeln("<fg=yellow>$text</fg=yellow>");
         return Command::SUCCESS;
     }
 
-    private function showInfo(string $text): void
+    private function showError(OutputInterface $output, string $text): int
     {
-        $this->output->writeln("<fg=white>$text</fg=white>");
-    }
-
-    private function showError(string $text): int
-    {
-        $this->output->writeln("<fg=red>$text</fg=red>");
+        $output->writeln("<fg=red>$text</fg=red>");
         return Command::INVALID;
     }
 
-    protected function getQuestionHelper(): QuestionHelper
+    protected function ask(InputInterface $input, OutputInterface $output, Question $question): mixed
     {
-        if ($this->questionHelper === null) {
-            $this->questionHelper = new QuestionHelper();
-        }
-        return $this->questionHelper;
+        return (new QuestionHelper())->ask($input, $output, $question);
     }
 
-    protected function ask(Question $question): mixed
-    {
-        return $this->getQuestionHelper()->ask($this->input, $this->output, $question);
-    }
-
-    private function saveClassToFile(string $class, string $content): bool
+    private function saveClassToFile(InputInterface $input, OutputInterface $output, string $class, string $content): bool
     {
         if (!$filePath = $this->getClassFilePath($class)) {
             return false;
@@ -60,16 +43,16 @@ trait CommandHelperTrait
         $fileState = 'new';
         if (file_exists($filePath)) {
             $fileState = 'overwrite';
-            if (!$this->input->getOption('force')
-                && !$this->ask(new ConfirmationQuestion("File `$filePath` is already exists, do you want to overwrite it?[y/n]: "))) {
+            if (!$input->getOption('force')
+                && !$this->ask($input, $output, new ConfirmationQuestion("File `$filePath` is already exists, do you want to overwrite it?[y/n]: "))) {
                 return true;
             }
         }
         if (file_put_contents($filePath, $content)) {
-            $this->showSuccess("File `$filePath` was successfully generated ($fileState)");
+            $this->showSuccess($output, "File `$filePath` was successfully generated ($fileState)");
             return true;
         } else {
-            $this->showError("Something went wrong can `$filePath` was successfully generated ($fileState)");
+            $this->showError($output, "Something went wrong can `$filePath` was successfully generated ($fileState)");
             return false;
         }
     }

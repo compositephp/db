@@ -12,36 +12,25 @@ use Spiral\Reactor\Partial\Method;
 
 class MigrationImage
 {
-    final const HASH_DELIMITER = '__';
-    private FileDeclaration $file;
-    private string $name;
-    private string $className;
+    private const HASH_DELIMITER = '__';
+
+    public readonly FileDeclaration $file;
+    public readonly string $name;
+    public readonly string $className;
 
     public function __construct(
-        protected MigrationConfig $migrationConfig,
+        private readonly MigrationConfig $migrationConfig,
+        private readonly Atomizer $atomizer,
         private readonly string $database
-    ) {}
-
-    public function getFile(): FileDeclaration
-    {
-        return $this->file;
-    }
-
-    public function getClassName(): string
-    {
-        return $this->className;
-    }
-
-    public function build(Atomizer $atomizer): void
-    {
+    ) {
         $upMethod = (new Method('up'));
         $downMethod = (new Method('down'));
         $atomizer->declareChanges($upMethod);
         $atomizer->revertChanges($downMethod);
 
         $hash = md5($upMethod->getBody() . $downMethod->getBody());
-        $actionNameParts = $this->getActionNameParts($atomizer);
-        $classNameParts = $this->getClassNameParts($atomizer);
+        $actionNameParts = $this->getActionNameParts();
+        $classNameParts = $this->getClassNameParts();
         $classNameParts[] = $hash;
 
         $actionName = substr(implode('_', $actionNameParts), 0, 128);
@@ -59,15 +48,13 @@ class MigrationImage
             ->addConstant('DATABASE', $this->database)->setProtected();
     }
 
-    public function getName(): string
-    {
-        return $this->name;
-    }
-
-    public function getActionNameParts(Atomizer $atomizer): array
+    /**
+     * @return string[]
+     */
+    public function getActionNameParts(): array
     {
         $actionNameParts = [$this->database];
-        foreach ($atomizer->getTables() as $table) {
+        foreach ($this->atomizer->getTables() as $table) {
             if ($table->getStatus() === AbstractTable::STATUS_NEW) {
                 $actionNameParts[] = 'create_' . $table->getName();
             } elseif ($table->getStatus() === AbstractTable::STATUS_DECLARED_DROPPED) {
@@ -110,10 +97,13 @@ class MigrationImage
         return $actionNameParts;
     }
 
-    private function getClassNameParts(Atomizer $atomizer): array
+    /**
+     * @return string[]
+     */
+    private function getClassNameParts(): array
     {
         $classNameParts = ['Migration', ucfirst($this->database)];
-        foreach ($atomizer->getTables() as $table) {
+        foreach ($this->atomizer->getTables() as $table) {
             $classNameParts[] = ucfirst($table->getName());
         }
         return $classNameParts;

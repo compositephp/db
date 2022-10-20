@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Composite\DB;
+namespace Composite\DB\Helpers;
 
 class DateTimeHelper
 {

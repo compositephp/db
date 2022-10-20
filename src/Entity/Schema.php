@@ -12,6 +12,7 @@ class Schema
      * @param $columns AbstractColumn[]
      */
     public function __construct(
+        /** @psalm-var class-string $class */
         public readonly string $class,
         public readonly array $columns,
         public readonly ?Attributes\Table $table,
@@ -19,6 +20,7 @@ class Schema
     ) {}
 
     /**
+     * @psalm-param class-string $class
      * @throws EntityException
      */
     public static function build(string $class): self
@@ -51,31 +53,40 @@ class Schema
      */
     public function castData(array $data): array
     {
-        foreach ($data as $key => $value) {
-            if (!is_string($key)) {
+        foreach ($this->columns as $column) {
+            if (!isset($data[$column->name])) {
                 continue;
             }
-            if ($column = $this->columns[$key] ?? null) {
-                if ($value === null && $column->isNullable) {
-                    continue;
-                }
-                try {
-                    $data[$key] = $column->cast($value);
-                } catch (\Throwable $throwable) {
-                    if (!$column->isStrict) {
-                        if ($column->hasDefaultValue()) {
-                            unset($data[$key]);
-                            continue;
-                        } elseif ($column->isNullable) {
-                            $data[$key] = null;
-                            continue;
-                        }
+            $value = $data[$column->name];
+            if ($value === null && $column->isNullable) {
+                continue;
+            }
+            try {
+                $data[$column->name] = $column->cast($value);
+            } catch (\Throwable $throwable) {
+                if (!$column->isStrict) {
+                    if ($column->hasDefaultValue()) {
+                        unset($data[$column->name]);
+                        continue;
+                    } elseif ($column->isNullable) {
+                        $data[$column->name] = null;
+                        continue;
                     }
-                    throw EntityException::fromThrowable($throwable);
                 }
+                throw EntityException::fromThrowable($throwable);
             }
         }
         return $data;
+    }
+
+    public function getColumn(string $name): ?AbstractColumn
+    {
+        foreach ($this->columns as $column) {
+            if ($column->name === $name) {
+                return $column;
+            }
+        }
+        return null;
     }
 
     /**

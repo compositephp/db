@@ -5,7 +5,7 @@ namespace Composite\DB\Generator\Schema;
 use Composite\DB\Generator\Schema\Parsers\MySQLSchemaParser;
 use Composite\DB\Generator\Schema\Parsers\PostgresSchemaParser;
 use Composite\DB\Generator\Schema\Parsers\SQLiteSchemaParser;
-use Cycle\Database\Database;
+use Cycle\Database\DatabaseInterface;
 use Cycle\Database\Driver\MySQL\MySQLDriver;
 use Cycle\Database\Driver\Postgres\PostgresDriver;
 use Cycle\Database\Driver\SQLite\SQLiteDriver;
@@ -28,13 +28,13 @@ class SQLSchema
         public readonly array $indexes,
     ) {}
 
-    public static function generate(Database $db, string $tableName): ?SQLSchema
+    public static function generate(DatabaseInterface $db, string $tableName): SQLSchema
     {
         $driverClass = $db->getDriver()::class;
         if ($driverClass === SQLiteDriver::class) {
             $tableSql = $db->query(SQLiteSchemaParser::TABLE_SQL, [':tableName' => $tableName])->fetch()['sql'];
             $indexesSql = array_map(
-                fn (array $row) => $row['sql'],
+                fn (array $row): string => $row['sql'],
                 $db->query(SQLiteSchemaParser::INDEXES_SQL, [':tableName' => $tableName])->fetchAll(),
             );
             $parser = new SQLiteSchemaParser($tableSql, $indexesSql);
@@ -46,10 +46,14 @@ class SQLSchema
         } elseif ($driverClass === PostgresDriver::class) {
             $columns = $db->query(PostgresSchemaParser::COLUMNS_SQL, [':tableName' => $tableName])->fetchAll();
             $indexes = $db->query(PostgresSchemaParser::INDEXES_SQL, [':tableName' => $tableName])->fetchAll();
-            $primaryKeys = array_map(
-                fn (array $row) => $row['column_name'],
-                $db->query(PostgresSchemaParser::getPrimaryKeySQL($tableName))->fetchAll()
-            );
+            if ($primaryKeySQL = PostgresSchemaParser::getPrimaryKeySQL($tableName)) {
+                $primaryKeys = array_map(
+                    fn(array $row): string => $row['column_name'],
+                    $db->query($primaryKeySQL)->fetchAll()
+                );
+            } else {
+                $primaryKeys = [];
+            }
             $allEnumsRaw = $db->query(PostgresSchemaParser::ALL_ENUMS_SQL)->fetchAll();
             $allEnums = [];
             foreach ($allEnumsRaw as $enumRaw) {

@@ -4,16 +4,14 @@ namespace Composite\DB\Commands;
 
 use Composite\DB\AbstractEntity;
 use Composite\DB\Entity\Attributes;
-use Composite\DB\Entity\Schema;
 use Composite\DB\Generator\CachedTableClassBuilder;
 use Composite\DB\Generator\TableClassBuilder;
-use Spiral\Reactor\FileDeclaration;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Question\ConfirmationQuestion;
+use Symfony\Component\Console\Question\Question;
 
 class GenerateTableCommand extends Command
 {
@@ -35,38 +33,38 @@ class GenerateTableCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->input = $input;
-        $this->output = $output;
-
-        $entityClass = $this->input->getArgument('entity');
+        $entityClass = $input->getArgument('entity');
         $reflection = new \ReflectionClass($entityClass);
 
         if (!$reflection->isSubclassOf(AbstractEntity::class)) {
-            return $this->showError("Class `$entityClass` must be subclass of " . AbstractEntity::class);
+            return $this->showError($output, "Class `$entityClass` must be subclass of " . AbstractEntity::class);
         }
         $schema = $entityClass::schema();
         $tableName = $schema->getTableName();
         $dbName = $schema->getDatabaseName();
         if (!$tableName || !$dbName) {
-            return $this->showError("Entity `$entityClass` must have attribute " . Attributes\Table::class);
+            return $this->showError($output, "Entity `$entityClass` must have attribute " . Attributes\Table::class);
         }
 
-        if (!$tableClass = $this->input->getArgument('table')) {
+        if (!$tableClass = $input->getArgument('table')) {
             $proposedClass = preg_replace('/\w+$/', 'Tables', $reflection->getNamespaceName()) . "\\{$tableName}Table";
-            $tableClass = $this->ask(new ConfirmationQuestion("Enter table full class name [skip to use $proposedClass]: "));
+            $tableClass = $this->ask(
+                $input,
+                $output,
+                new Question("Enter table full class name [skip to use $proposedClass]: ")
+            );
             if (!$tableClass) {
                 $tableClass = $proposedClass;
             }
-        } else {
-            if (str_starts_with($tableClass, '\\')) {
-                $tableClass = substr($tableClass, 1);
-            }
+        }
+        if (str_starts_with($tableClass, '\\')) {
+            $tableClass = substr($tableClass, 1);
         }
 
         if (!preg_match('/^(.+)\\\(\w+)$/', $tableClass)) {
-            return $this->showError("Table class `$tableClass` is incorrect");
+            return $this->showError($output, "Table class `$tableClass` is incorrect");
         }
-        if ($this->input->getOption('cached')) {
+        if ($input->getOption('cached')) {
             $template = new CachedTableClassBuilder(
                 schema: $schema,
                 tableClass: $tableClass,
@@ -85,12 +83,12 @@ class GenerateTableCommand extends Command
             return Command::FAILURE;
         }
         if (file_exists($filePath)) {
-            if (!$this->input->getOption('force')) {
-                return $this->showError("File `$filePath` already exists, use --force flag to overwrite it");
+            if (!$input->getOption('force')) {
+                return $this->showError($output, "File `$filePath` already exists, use --force flag to overwrite it");
             }
             $fileState = 'overwrite';
         }
         file_put_contents($filePath, $file->render());
-        return $this->showSuccess("File `$filePath` was successfully generated ($fileState)");
+        return $this->showSuccess($output, "File `$filePath` was successfully generated ($fileState)");
     }
 }

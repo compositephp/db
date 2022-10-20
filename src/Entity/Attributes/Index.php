@@ -12,6 +12,9 @@ class Index
         public readonly ?string $name = null,
     ) {}
 
+    /**
+     * @psalm-return non-empty-string
+     */
     public function generateName(string $tableName): string
     {
         $parts = [

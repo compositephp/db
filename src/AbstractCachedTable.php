@@ -17,6 +17,9 @@ abstract class AbstractCachedTable extends AbstractTable
         parent::__construct($databaseProvider);
     }
 
+    /**
+     * @return string[]
+     */
     abstract protected function getFlushCacheKeys(AbstractEntity $entity): array;
 
     /**
@@ -103,11 +106,19 @@ abstract class AbstractCachedTable extends AbstractTable
         return $keys;
     }
 
+    /**
+     * @return array<string, mixed>|null
+     */
     protected function findByPkCachedInternal(mixed $pk, null|int|\DateInterval $ttl = null): ?array
     {
         return $this->findOneCachedInternal($this->getPkCondition($pk), $ttl);
     }
 
+    /**
+     * @param array<string, mixed> $condition
+     * @param int|\DateInterval|null $ttl
+     * @return array<string, mixed>|null
+     */
     protected function findOneCachedInternal(array $condition, null|int|\DateInterval $ttl = null): ?array
     {
         return $this->getCached(
@@ -117,6 +128,11 @@ abstract class AbstractCachedTable extends AbstractTable
         ) ?: null;
     }
 
+    /**
+     * @param array<string, mixed> $condition
+     * @param array<string, string>|string $orderBy see \Cycle\Database\Query\SelectQuery::orderBy for format
+     * @return array<string, mixed>[]
+     */
     protected function findAllCachedInternal(
         array $condition = [],
         array|string $orderBy = [],
@@ -131,6 +147,9 @@ abstract class AbstractCachedTable extends AbstractTable
         );
     }
 
+    /**
+     * @param array<string, mixed> $condition
+     */
     protected function countAllCachedInternal(array $condition = [], null|int|\DateInterval $ttl = null): int
     {
         return (int)$this->getCached(
@@ -211,7 +230,7 @@ abstract class AbstractCachedTable extends AbstractTable
         if ($parts) {
             $formattedParts = [];
             foreach ($parts as $part) {
-                if (!$part) continue;
+                if ($part === '' || $part === 0) continue;
                 if (is_array($part)) {
                     $formattedParts[] = $this->formatArray($part);
                 } else {
