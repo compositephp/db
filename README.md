@@ -1,7 +1,7 @@
 # What is Composite DB
 
-Composite DB is light and fast PHP ORM, DataMapper which allows you to represent your SQL tables schme in OOP style using full 
-power of PHP 8.1+ class syntax. 
+Composite DB is lightweight and fast PHP ORM, DataMapper and Table Gateway which allows you to represent your SQL tables 
+scheme in OOP style using full power of PHP 8.1+ class syntax. 
 
 It also gives you CRUD, query builder and automatic caching out of the box, so you can start
 to work with your database from php code in a minutes!
@@ -70,6 +70,7 @@ create table Users
     `email`      varchar(255)                                         not null,
     `name`       varchar(255)               default NULL              null,
     `is_test`    tinyint(1)                 default 0                 not null,
+    `languages`  json                       default '[]'              not null,
     `status`     enum ("ACTIVE", "BLOCKED") default "ACTIVE"          null,
     `created_at` TIMESTAMP                  default CURRENT_TIMESTAMP not null,
     constraint Users_pk primary key (id)
@@ -95,6 +96,7 @@ class User extends AbstractEntity
         public string $email,
         public ?string $name = null,
         public bool $is_test = false,
+        public array $languages = [],
         public Status $status = Status::ACTIVE,
         public readonly \DateTimeImmutable $created_at = new \DateTimeImmutable(),
     ) {}
@@ -124,6 +126,7 @@ $table = new UsersTable(...);
 $user = new User(
     email: 'user@example.com',
     name: 'John',
+    languages: ['en', 'fr'],
 );
 $table->save($user);
 
@@ -141,6 +144,39 @@ $table->delete($user);
 $table->findAll();
 $table->countAll();
 ```
+
+You can also serialize user entity to array or json:
+
+```php
+var_export($user->toArray());
+
+//will output
+array (
+  'id' => 123,
+  'email' => 'user@example.com',
+  'name' => 'John',
+  'is_test' => false,
+  'languages' => '["en","fr"]',
+  'status' => 'BLOCKED',
+  'created_at' => '2022-01-01 11:22:33.000000',
+)
+```
+
+Or deserialize (hydrate) entity from array:
+
+```php
+$user = User::fromArray([
+  'id' => 123,
+  'email' => 'user@example.com',
+  'name' => 'John',
+  'is_test' => false,
+  'languages' => '["en","fr"]',
+  'status' => 'BLOCKED',
+  'created_at' => '2022-01-01 11:22:33.000000',
+]);
+```
+
+And thats it, no special getters or setters, no "behaviours" or extra code, smart entity casts everything automatically.
 
 > You can find full working example [here](doc/example.md) which you can copy and run as is.
 
