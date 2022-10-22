@@ -97,6 +97,22 @@ class User extends AbstractEntity
 }
 ```
 
+## Supported column types:
+
+Entity can automatically serialize and deserialize back almost every data types you may need and you don't need to 
+write any code for it:
+
+- String
+- Integer
+- Float
+- Bool
+- Array
+- Object (strClass)
+- DateTime and DateTimeImmutable
+- Enum
+- Another Entity
+- Custom Class that implements `Composite\DB\Entity\CastableInterface`
+
 ## Useful tips
 
 * Only public and protected class properties are serializable, private will be ignored.

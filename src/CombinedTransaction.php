@@ -2,10 +2,16 @@
 
 namespace Composite\DB;
 
+use Composite\DB\Exceptions\DbException;
+use Psr\SimpleCache\CacheInterface;
+use Psr\SimpleCache\InvalidArgumentException;
+
 class CombinedTransaction
 {
     /** @var \Cycle\Database\DatabaseInterface[] */
     private array $transactions = [];
+    private ?string $lockKey = null;
+    private ?CacheInterface $cache = null;
 
     /**
      * @throws Exceptions\DbException
@@ -48,7 +54,7 @@ class CombinedTransaction
         foreach ($this->transactions as $db) {
             $db->rollback();
         }
-        $this->transactions = [];
+        $this->finish();
     }
 
     /**
@@ -66,6 +72,45 @@ class CombinedTransaction
                 throw new Exceptions\DbException($e->getMessage(), 500, $e);
             }
         }
+        $this->finish();
+    }
+
+    /**
+     * Pessimistic lock
+     * @throws DbException
+     */
+    public function lock(CacheInterface $cache, array $keyParts, int $duration = 10): void
+    {
+        $this->cache = $cache;
+        $this->lockKey = implode('.', array_merge(['composite', 'lock'], $keyParts));
+        if (strlen($this->lockKey) > 64) {
+            $this->lockKey = sha1($this->lockKey);
+        }
+        try {
+            if ($this->cache->get($this->lockKey)) {
+                throw new DbException("Failed to get lock `{$this->lockKey}`");
+            }
+            if (!$this->cache->set($this->lockKey, 1, $duration)) {
+                throw new DbException("Failed to save lock `{$this->lockKey}`");
+            }
+        } catch (InvalidArgumentException) {
+            throw new DbException("Lock key is invalid `{$this->lockKey}`");
+        }
+    }
+
+    public function releaseLock(): void
+    {
+        if (!$this->cache || !$this->lockKey) {
+            return;
+        }
+        try {
+            $this->cache->delete($this->lockKey);
+        } catch (InvalidArgumentException) {}
+    }
+
+    private function finish(): void
+    {
         $this->transactions = [];
+        $this->releaseLock();
     }
 }

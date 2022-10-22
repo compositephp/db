@@ -145,6 +145,8 @@ $table->findAll();
 $table->countAll();
 ```
 
+> You can find full working example [here](doc/example.md) which you can copy and run as is.
+
 You can also serialize user entity to array or json:
 
 ```php
@@ -177,8 +179,7 @@ $user = User::fromArray([
 ```
 
 And thats it, no special getters or setters, no "behaviours" or extra code, smart entity casts everything automatically.
-
-> You can find full working example [here](doc/example.md) which you can copy and run as is.
+More about Entity and supported auto casting types you can find [here](doc/entity.md).
 
 ## License:
 

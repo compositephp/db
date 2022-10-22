@@ -4,11 +4,14 @@ Overview:
 * [Basics](#basics)
 * [Custom queries](#custom-queries)
 * [Transactions](#transactions)
+* [Locks](#locks)
 * [Automatic cache](cache.md)
 
 ## Basics
 
-In Composite DB the `AbstractTable` is query class that must be the only entry point to work with your SQL Table.
+In Composite DB `AbstractTable` is [Table Gateway](https://www.martinfowler.com/eaaCatalog/tableDataGateway.html) which
+holds all the SQL for accessing a single table or view: selects, inserts, updates, and deletes. Other code calls its 
+methods for all interaction with the database.
 
 Before using it, you need to [configure DatabaseManager](configuration.md#configure-databasemanager)
 
@@ -109,5 +112,27 @@ To wrap you operations in 1 transactions there are 2 ways:
        ...
    );
    $transaction->save($photosTable, $photo);
+   $transaction->commit();
+   ```
+   
+## Locks
+
+If you worry about concurrency writes during your transaction and want be sure that only 1 process changing your data 
+at one time you can use pessimistic locks. You need only to setup PSR-16 (simple cache) and call 
+`CombinedTransaction::lock()`.
+
+As lock key parts use something specific related to your operation and another concurrency process will till your 
+process is finished. 
+
+   ```php
+   $transaction = new CombinedTransaction();
+   
+   //throws Exception if failed to get lock
+   $transaction->lock($psr16CacheInterface, ['user', 123, 'photos', 'update']);
+   
+   $transaction->save(...);
+   $transaction->save(...);
+   $transaction->save(...);
+   
    $transaction->commit();
    ```
