@@ -5,7 +5,7 @@ namespace Composite\DB;
 use Composite\DB\Entity\Schema;
 use Composite\DB\Exceptions\EntityException;
 
-abstract class AbstractEntity implements \JsonSerializable, \Stringable
+abstract class AbstractEntity implements \JsonSerializable
 {
     /** @var Entity\Schema[] */
     private static array $_schemas = [];
@@ -98,11 +98,6 @@ abstract class AbstractEntity implements \JsonSerializable, \Stringable
     public function jsonSerialize(): array
     {
         return $this->toArray();
-    }
-
-    public function __toString(): string
-    {
-        return json_encode($this);
     }
 
     final public function isNew(): bool
