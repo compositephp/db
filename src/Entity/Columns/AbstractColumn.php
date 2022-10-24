@@ -35,10 +35,4 @@ abstract class AbstractColumn
     {
         return $this->primaryKey?->autoIncrement ?? false;
     }
-
-    public function hasDefaultValue(): bool
-    {
-        //TODO
-        return false;
-    }
 }

@@ -68,7 +68,7 @@ class Schema
                 $data[$column->name] = $column->cast($value);
             } catch (\Throwable $throwable) {
                 if (!$column->isStrict) {
-                    if ($column->hasDefaultValue()) {
+                    if ($column->hasDefaultValue) {
                         unset($data[$column->name]);
                         continue;
                     } elseif ($column->isNullable) {
