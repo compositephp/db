@@ -80,7 +80,6 @@ final class SchemaTest extends \PHPUnit\Framework\TestCase
             class: TestStand\TestEntity::class,
             columns: ColumnBuilder::fromReflection(new \ReflectionClass(TestStand\TestEntity::class)),
             table: $table,
-            isSoftDelete: false
         );
         $this->assertSame($expectedDatabaseName, $schema->getDatabaseName());
         $this->assertSame($expectedTableName, $schema->getTableName());

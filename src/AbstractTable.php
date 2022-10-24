@@ -3,6 +3,7 @@
 namespace Composite\DB;
 
 use Composite\DB\Entity\Schema;
+use Composite\DB\Exceptions\DbException;
 use Composite\DB\Exceptions\EntityException;
 use Cycle\Database\DatabaseInterface;
 use Cycle\Database\DatabaseProviderInterface;
@@ -28,7 +29,7 @@ abstract class AbstractTable
     /**
      * @param AbstractEntity $entity
      * @return void
-     * @throws EntityException
+     * @throws \Throwable
      */
     public function save(AbstractEntity &$entity): void
     {
@@ -52,11 +53,31 @@ abstract class AbstractTable
             }
             $where = $this->getPkCondition($entity);
             $this->enrichCondition($where);
-            $this->db->update(
-                $this->getTableName(),
-                $changedColumns,
-                $where
-            )->run();
+
+            if ($this->getSchema()->isOptimisticLock && isset($entity->version)) {
+                $currentVersion = $entity->version;
+                $this->transaction(function () use ($changedColumns, $where, $entity, $currentVersion) {
+                    $this->db->update(
+                        $this->getTableName(),
+                        $changedColumns,
+                        $where
+                    )->run();
+                    $versionUpdated = $this->db->update(
+                        $this->getTableName(),
+                        ['version' => $currentVersion + 1],
+                        $where + ['version' => $currentVersion]
+                    )->run();
+                    if (!$versionUpdated) {
+                        throw new DbException('Failed to update entity version, concurrency modification, rolling back.');
+                    }
+                });
+            } else {
+                $this->db->update(
+                    $this->getTableName(),
+                    $changedColumns,
+                    $where
+                )->run();
+            }
             $entity->resetChangedColumns();
         }
     }

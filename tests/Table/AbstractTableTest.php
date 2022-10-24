@@ -129,9 +129,74 @@ final class AbstractTableTest extends BaseTableTest
         $exceptionCatch = false;
         try {
             $compositeTable->save($entity);
-        } catch (EntityException $e) {
+        } catch (EntityException) {
             $exceptionCatch = true;
         }
         $this->assertTrue($exceptionCatch);
+    }
+
+    public function test_optimisticLock(): void
+    {
+        $dbm = self::getDatabaseManager();
+
+        //checking that problem exists
+        $aiEntity1 = new Entities\TestAutoincrementEntity(name: 'John');
+        $aiTable1 = new Tables\TestAutoincrementTable($dbm);
+        $aiTable2 = new Tables\TestAutoincrementTable($dbm);
+
+        $aiTable1->save($aiEntity1);
+
+        $aiEntity2 = $aiTable2->findByPk($aiEntity1->id);
+
+        $db1 = $aiTable1->getDb();
+        $db1->begin();
+        $aiEntity1->name = 'John1';
+        $aiTable1->save($aiEntity1);
+
+        $db2 = $aiTable2->getDb();
+        $db2->begin();
+        $aiEntity2->name = 'John2';
+        $aiTable2->save($aiEntity2);
+
+        $this->assertTrue($db2->commit());
+        $this->assertTrue($db1->commit());
+
+        $aiEntity3 = $aiTable1->findByPk($aiEntity1->id);
+        $this->assertEquals('John2', $aiEntity3->name);
+        
+        //Checking optimistic lock
+        $olEntity1 = new Entities\TestOptimisticLockEntity(name: 'John');
+        $olTable1 = new Tables\TestOptimisticLockTable($dbm);
+        $olTable2 = new Tables\TestOptimisticLockTable($dbm);
+
+        $olTable1->init();
+
+        $olTable1->save($olEntity1);
+
+        $olEntity2 = $olTable2->findByPk($olEntity1->id);
+
+        $db1 = $olTable1->getDb();
+        $db1->begin();
+        $olEntity1->name = 'John1';
+        $olTable1->save($olEntity1);
+
+        $db2 = $olTable2->getDb();
+        $db2->begin();
+        $olEntity2->name = 'John2';
+
+        $exceptionCaught = false;
+        try {
+            $olTable2->save($olEntity2);
+        } catch (DbException) {
+            $exceptionCaught = true;
+        }
+        $this->assertTrue($exceptionCaught);
+
+        $this->assertTrue($db2->commit());
+        $this->assertTrue($db1->commit());
+
+        $olEntity3 = $olTable1->findByPk($olEntity1->id);
+        $this->assertEquals(2, $olEntity3->version);
+        $this->assertEquals('John1', $olEntity3->name);
     }
 }

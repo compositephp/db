@@ -39,13 +39,6 @@ class TestAutoincrementTable extends AbstractTable implements IAutoincrementTabl
         return $this->countAllInternal(['name' => $name]);
     }
 
-    public function findRandom(): ?TestAutoincrementEntity
-    {
-        return $this->createEntity(
-            $this->select()->where('id', 1)->run()->fetch()
-        );
-    }
-
     public function init(): bool
     {
         $this->db->execute(

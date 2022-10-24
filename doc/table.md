@@ -4,7 +4,7 @@ Overview:
 * [Basics](#basics)
 * [Custom queries](#custom-queries)
 * [Transactions](#transactions)
-* [Locks](#locks)
+* [Concurrency transactions and locks](#locks)
 * [Automatic cache](cache.md)
 
 ## Basics
@@ -116,13 +116,17 @@ To wrap you operations in 1 transactions there are 2 ways:
    ```
    
 ## Locks
+If you worry about concurrency updates during your transaction and want to be sure that only 1 process changing your 
+data at one time you can use optimistic or pessimistic lock.
 
-If you worry about concurrency writes during your transaction and want be sure that only 1 process changing your data 
-at one time you can use pessimistic locks. You need only to setup PSR-16 (simple cache) and call 
-`CombinedTransaction::lock()`.
+### 1. Optimistic lock
+Add trait `Composite\DB\Entity\Traits\OptimisticLock` to your entity and column `version` (INT NOT NULL DEFAULT 1) to 
+your table.
 
-As lock key parts use something specific related to your operation and another concurrency process will till your 
-process is finished. 
+### 2. Pessimistic lock
+You need to setup PSR-16 (simple cache) interface and call `CombinedTransaction::lock()`.
+
+As lock key parts use something specific related to your operation and another concurrency process will wait. 
 
    ```php
    $transaction = new CombinedTransaction();

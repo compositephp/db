@@ -16,7 +16,8 @@ class Schema
         public readonly string $class,
         public readonly array $columns,
         public readonly ?Attributes\Table $table,
-        public readonly bool $isSoftDelete,
+        public readonly bool $isSoftDelete = false,
+        public readonly bool $isOptimisticLock = false,
     ) {}
 
     /**
@@ -38,11 +39,13 @@ class Schema
                 $tableAttribute = $reflectionAttribute->newInstance();
             }
         }
+        $traitNames = $reflection->getTraitNames();
         return new self(
             class: $class,
             columns: $columns,
             table: $tableAttribute,
-            isSoftDelete: \in_array(Traits\SoftDelete::class, $reflection->getTraitNames()),
+            isSoftDelete: \in_array(Traits\SoftDelete::class, $traitNames),
+            isOptimisticLock: \in_array(Traits\OptimisticLock::class, $traitNames),
         );
     }
 
