@@ -78,8 +78,9 @@ create table Users
 );
 ```
 Table Entity:
+
 ```php
-use Composite\DB\Entity\Attributes\{Table, PrimaryKey};
+use Composite\DB\Attributes\{Table, PrimaryKey};
 
 #[Table(db: 'dbName', name: 'Users')]
 class User extends AbstractEntity
@@ -111,7 +112,7 @@ write any code for it:
 - DateTime and DateTimeImmutable
 - Enum
 - Another Entity
-- Custom Class that implements `Composite\DB\Entity\CastableInterface`
+- Custom Class that implements `Composite\Entity\CastableInterface`
 
 ## Useful tips
 

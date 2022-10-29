@@ -2,13 +2,12 @@
 
 namespace Composite\DB\Tests\Table;
 
-use Composite\DB\AbstractEntity;
 use Composite\DB\AbstractTable;
-use Composite\DB\CombinedTransaction;
 use Composite\DB\Exceptions\DbException;
-use Composite\DB\Exceptions\EntityException;
-use Composite\DB\Tests\Table\TestStand\Tables;
 use Composite\DB\Tests\Table\TestStand\Entities;
+use Composite\DB\Tests\Table\TestStand\Tables;
+use Composite\Entity\AbstractEntity;
+use Composite\Entity\Exceptions\EntityException;
 
 final class AbstractTableTest extends BaseTableTest
 {
@@ -17,48 +16,48 @@ final class AbstractTableTest extends BaseTableTest
         $dbm = self::getDatabaseManager();
         return [
             [
-                new Tables\TestAutoincrementTable($dbm),
-                Entities\TestAutoincrementEntity::fromArray(['id' => 123, 'name' => 'John']),
+                new \Composite\DB\Tests\TestStand\Tables\TestAutoincrementTable($dbm),
+                \Composite\DB\Tests\TestStand\Entities\TestAutoincrementEntity::fromArray(['id' => 123, 'name' => 'John']),
                 ['id' => 123],
             ],
             [
-                new Tables\TestAutoincrementTable($dbm),
+                new \Composite\DB\Tests\TestStand\Tables\TestAutoincrementTable($dbm),
                 456,
                 ['id' => 456],
             ],
             [
-                new Tables\TestCompositeTable($dbm),
-                new Entities\TestCompositeEntity(user_id: 123, post_id: 456, message: 'Text'),
+                new \Composite\DB\Tests\TestStand\Tables\TestCompositeTable($dbm),
+                new \Composite\DB\Tests\TestStand\Entities\TestCompositeEntity(user_id: 123, post_id: 456, message: 'Text'),
                 ['user_id' => 123, 'post_id' => 456],
             ],
             [
-                new Tables\TestCompositeTable($dbm),
+                new \Composite\DB\Tests\TestStand\Tables\TestCompositeTable($dbm),
                 ['user_id' => 123, 'post_id' => 456],
                 ['user_id' => 123, 'post_id' => 456],
             ],
             [
-                new Tables\TestUniqueTable($dbm),
-                new Entities\TestUniqueEntity(id: '123abc', name: 'John'),
+                new \Composite\DB\Tests\TestStand\Tables\TestUniqueTable($dbm),
+                new \Composite\DB\Tests\TestStand\Entities\TestUniqueEntity(id: '123abc', name: 'John'),
                 ['id' => '123abc'],
             ],
             [
-                new Tables\TestUniqueTable($dbm),
+                new \Composite\DB\Tests\TestStand\Tables\TestUniqueTable($dbm),
                 '123abc',
                 ['id' => '123abc'],
             ],
             [
-                new Tables\TestAutoincrementSdTable($dbm),
-                Entities\TestAutoincrementSdEntity::fromArray(['id' => 123, 'name' => 'John']),
+                new \Composite\DB\Tests\TestStand\Tables\TestAutoincrementSdTable($dbm),
+                \Composite\DB\Tests\TestStand\Entities\TestAutoincrementSdEntity::fromArray(['id' => 123, 'name' => 'John']),
                 ['id' => 123],
             ],
             [
-                new Tables\TestCompositeSdTable($dbm),
-                new Entities\TestCompositeSdEntity(user_id: 123, post_id: 456, message: 'Text'),
+                new \Composite\DB\Tests\TestStand\Tables\TestCompositeSdTable($dbm),
+                new \Composite\DB\Tests\TestStand\Entities\TestCompositeSdEntity(user_id: 123, post_id: 456, message: 'Text'),
                 ['user_id' => 123, 'post_id' => 456],
             ],
             [
-                new Tables\TestUniqueSdTable($dbm),
-                new Entities\TestUniqueSdEntity(id: '123abc', name: 'John'),
+                new \Composite\DB\Tests\TestStand\Tables\TestUniqueSdTable($dbm),
+                new \Composite\DB\Tests\TestStand\Entities\TestUniqueSdEntity(id: '123abc', name: 'John'),
                 ['id' => '123abc'],
             ],
         ];
@@ -78,32 +77,32 @@ final class AbstractTableTest extends BaseTableTest
     {
         return [
             [
-                new Tables\TestAutoincrementTable(self::getDatabaseManager()),
+                new \Composite\DB\Tests\TestStand\Tables\TestAutoincrementTable(self::getDatabaseManager()),
                 ['id' => 123],
                 ['id' => 123],
             ],
             [
-                new Tables\TestCompositeTable(self::getDatabaseManager()),
+                new \Composite\DB\Tests\TestStand\Tables\TestCompositeTable(self::getDatabaseManager()),
                 ['user_id' => 123, 'post_id' => 456],
                 ['user_id' => 123, 'post_id' => 456],
             ],
             [
-                new Tables\TestUniqueTable(self::getDatabaseManager()),
+                new \Composite\DB\Tests\TestStand\Tables\TestUniqueTable(self::getDatabaseManager()),
                 ['id' => '123abc'],
                 ['id' => '123abc'],
             ],
             [
-                new Tables\TestAutoincrementSdTable(self::getDatabaseManager()),
+                new \Composite\DB\Tests\TestStand\Tables\TestAutoincrementSdTable(self::getDatabaseManager()),
                 ['id' => 123],
                 ['id' => 123, 'deleted_at' => null],
             ],
             [
-                new Tables\TestCompositeSdTable(self::getDatabaseManager()),
+                new \Composite\DB\Tests\TestStand\Tables\TestCompositeSdTable(self::getDatabaseManager()),
                 ['user_id' => 123, 'post_id' => 456],
                 ['user_id' => 123, 'post_id' => 456, 'deleted_at' => null],
             ],
             [
-                new Tables\TestUniqueSdTable(self::getDatabaseManager()),
+                new \Composite\DB\Tests\TestStand\Tables\TestUniqueSdTable(self::getDatabaseManager()),
                 ['id' => '123abc'],
                 ['id' => '123abc', 'deleted_at' => null],
             ],
@@ -123,8 +122,8 @@ final class AbstractTableTest extends BaseTableTest
     public function test_illegalEntitySave(): void
     {
         $dbm = self::getDatabaseManager();
-        $entity = new Entities\TestAutoincrementEntity(name: 'Foo');
-        $compositeTable = new Tables\TestUniqueTable($dbm);
+        $entity = new \Composite\DB\Tests\TestStand\Entities\TestAutoincrementEntity(name: 'Foo');
+        $compositeTable = new \Composite\DB\Tests\TestStand\Tables\TestUniqueTable($dbm);
 
         $exceptionCatch = false;
         try {
@@ -140,9 +139,9 @@ final class AbstractTableTest extends BaseTableTest
         $dbm = self::getDatabaseManager();
 
         //checking that problem exists
-        $aiEntity1 = new Entities\TestAutoincrementEntity(name: 'John');
-        $aiTable1 = new Tables\TestAutoincrementTable($dbm);
-        $aiTable2 = new Tables\TestAutoincrementTable($dbm);
+        $aiEntity1 = new \Composite\DB\Tests\TestStand\Entities\TestAutoincrementEntity(name: 'John');
+        $aiTable1 = new \Composite\DB\Tests\TestStand\Tables\TestAutoincrementTable($dbm);
+        $aiTable2 = new \Composite\DB\Tests\TestStand\Tables\TestAutoincrementTable($dbm);
 
         $aiTable1->save($aiEntity1);
 
@@ -165,9 +164,9 @@ final class AbstractTableTest extends BaseTableTest
         $this->assertEquals('John2', $aiEntity3->name);
         
         //Checking optimistic lock
-        $olEntity1 = new Entities\TestOptimisticLockEntity(name: 'John');
-        $olTable1 = new Tables\TestOptimisticLockTable($dbm);
-        $olTable2 = new Tables\TestOptimisticLockTable($dbm);
+        $olEntity1 = new \Composite\DB\Tests\TestStand\Entities\TestOptimisticLockEntity(name: 'John');
+        $olTable1 = new \Composite\DB\Tests\TestStand\Tables\TestOptimisticLockTable($dbm);
+        $olTable2 = new \Composite\DB\Tests\TestStand\Tables\TestOptimisticLockTable($dbm);
 
         $olTable1->init();
 

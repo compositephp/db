@@ -3,13 +3,11 @@
 namespace Composite\DB\Tests\Migrations;
 
 use Composite\DB\Migrations\CycleBridge;
-use Composite\DB\Tests\Entity\TestStand\TestBackedIntEnum;
-use Composite\DB\Tests\Entity\TestStand\TestBackedStringEnum;
-use Composite\DB\Tests\Entity\TestStand\TestDiversityEntity;
-use Composite\DB\Tests\Entity\TestStand\TestEntity;
-use Composite\DB\Tests\Entity\TestStand\TestUnitEnum;
 use Composite\DB\Tests\Table\BaseTableTest;
-use Composite\DB\Tests\Table\TestStand\Entities;
+use Composite\DB\Tests\TestStand\Entities\Enums\TestBackedIntEnum;
+use Composite\DB\Tests\TestStand\Entities\Enums\TestBackedStringEnum;
+use Composite\DB\Tests\TestStand\Entities\Enums\TestUnitEnum;
+use Composite\DB\Tests\TestStand\Entities;
 use Cycle\Database\Driver\SQLite\Schema;
 use Cycle\Database\Injection\Fragment;
 
@@ -131,7 +129,7 @@ final class CycleBridgeTest extends BaseTableTest
                 'expectedIndexes' => [],
             ],
             [
-                'class' => TestEntity::class,
+                'class' => Entities\TestEntity::class,
                 'expectedColumns' => [
                     'str' => (new Schema\SQLiteColumn('Test', 'str'))
                         ->string()
@@ -196,7 +194,7 @@ final class CycleBridgeTest extends BaseTableTest
                 'expectedIndexes' => [],
             ],
             [
-                'class' => TestDiversityEntity::class,
+                'class' => Entities\TestDiversityEntity::class,
                 'expectedColumns' => [
                     'id' => (new Schema\SQLiteColumn('Diversity', 'id'))
                         ->primary(),

@@ -2,10 +2,11 @@
 
 namespace Composite\DB\Generator;
 
-use Composite\DB\Entity\Columns\AbstractColumn;
-use Composite\DB\Entity\Schema;
+use Composite\DB\Helpers\ClassHelper;
+use Composite\DB\TableConfig;
+use Composite\Entity\Columns\AbstractColumn;
+use Composite\Entity\Schema;
 use Doctrine\Inflector\Rules\English\InflectorFactory;
-use Spiral\Reactor\ClassDeclaration;
 use Spiral\Reactor\FileDeclaration;
 use Spiral\Reactor\Partial\Method;
 
@@ -15,11 +16,12 @@ abstract class AbstractTableClassBuilder
     protected readonly string $entityClassShortName;
 
     public function __construct(
-        protected readonly Schema $schema,
         protected readonly string $tableClass,
+        protected readonly Schema $schema,
+        protected readonly TableConfig $tableConfig,
     )
     {
-        $this->entityClassShortName = substr(strrchr($schema->class, "\\"), 1);
+        $this->entityClassShortName = ClassHelper::extractShortName($this->schema->class);
         $this->file = new FileDeclaration();
     }
 
@@ -31,12 +33,12 @@ abstract class AbstractTableClassBuilder
         return $this->file;
     }
 
-    protected function generateGetSchema(): Method
+    protected function generateGetConfig(): Method
     {
-        return (new Method('getSchema'))
+        return (new Method('getConfig'))
             ->setProtected()
-            ->setReturnType(Schema::class)
-            ->setBody('return ' . $this->entityClassShortName . '::schema();');
+            ->setReturnType(TableConfig::class)
+            ->setBody('return TableConfig::fromEntitySchema(' . $this->entityClassShortName . '::schema());');
     }
 
     protected function buildVarsList(array $vars): string

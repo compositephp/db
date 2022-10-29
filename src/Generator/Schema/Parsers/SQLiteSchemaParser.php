@@ -14,9 +14,10 @@ class SQLiteSchemaParser
     public const INDEXES_SQL = "SELECT sql FROM sqlite_master WHERE type = 'index' and tbl_name = :tableName";
 
     private const TABLE_NAME_PATTERN = '/^create table (?:`|\"|\')?(\w+)(?:`|\"|\')?/i';
-    private const COLUMN_PATTERN = '/^(?:`|\"|\')?(\w+)(?:`|\"|\')? ([a-zA-Z]+)\s?(\(([\d,\s]+)\))?/';
-    private const CONSTRAINT_PATTERN = '/^constraint (?:`|\"|\')?\w+(?:`|\"|\')? primary key \(([\w\s,\'\"`]+)\)/i';
-    private const ENUM_PATTERN = '/^check \((?:`|\"|\')?(\w+)(?:`|\"|\')? in \((.+)\)\)/i';
+    private const COLUMN_PATTERN = '/^(?!constraint|primary key)(?:`|\"|\')?(\w+)(?:`|\"|\')? ([a-zA-Z]+)\s?(\(([\d,\s]+)\))?/i';
+    private const CONSTRAINT_PATTERN = '/^(?:constraint) (?:`|\"|\')?\w+(?:`|\"|\')? primary key \(([\w\s,\'\"`]+)\)/i';
+    private const PRIMARY_KEY_PATTERN = '/^primary key \(([\w\s,\'\"`]+)\)/i';
+    private const ENUM_PATTERN = '/check \((?:`|\"|\')?(\w+)(?:`|\"|\')? in \((.+)\)\)/i';
 
     public function __construct(
         private readonly string $tableSql,
@@ -25,7 +26,7 @@ class SQLiteSchemaParser
 
     public function getSchema(): SQLSchema
     {
-        $columns = $enums = $primaryKeys = $indexes = [];
+        $columns = $enums = $primaryKeys = [];
         $columnsStarted = false;
         $tableName = '';
         $lines = array_map(
@@ -139,9 +140,10 @@ class SQLiteSchemaParser
 
     private function getDefaultValue(string $sqlLine): mixed
     {
+        $sqlLine = $this->cleanCheckEnum($sqlLine);
         if (preg_match('/default\s+\'(.*)\'/iu', $sqlLine, $matches)) {
             return $matches[1];
-        } elseif (preg_match('/default\s+([\w.]+)/', $sqlLine, $matches)) {
+        } elseif (preg_match('/default\s+([\w.]+)/iu', $sqlLine, $matches)) {
             $defaultValue = $matches[1];
             if (strtolower($defaultValue) === 'null') {
                 return null;
@@ -157,7 +159,8 @@ class SQLiteSchemaParser
             $name = $matches[1];
             return stripos($sqlLine, ' primary key') !== false ? [$name] : [];
         }
-        if (!preg_match(self::CONSTRAINT_PATTERN, $sqlLine, $matches)) {
+        if (!preg_match(self::CONSTRAINT_PATTERN, $sqlLine, $matches)
+            && !preg_match(self::PRIMARY_KEY_PATTERN, $sqlLine, $matches)) {
             return [];
         }
         $primaryColumnsRaw = $matches[1];
@@ -221,5 +224,10 @@ class SQLiteSchemaParser
             );
         }
         return $result;
+    }
+
+    private function cleanCheckEnum(string $sqlLine): string
+    {
+        return preg_replace('/ check \(\"\w+\" IN \(.+\)\)/i', '', $sqlLine);
     }
 }

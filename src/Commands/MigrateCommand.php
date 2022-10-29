@@ -2,9 +2,9 @@
 
 namespace Composite\DB\Commands;
 
-use Composite\DB\AbstractEntity;
 use Composite\DB\Migrations\CycleBridge;
 use Composite\DB\Migrations\MigrationImage;
+use Composite\Entity\AbstractEntity;
 use Cycle\Database\DatabaseProviderInterface;
 use Cycle\Migrations\Config\MigrationConfig;
 use Cycle\Migrations\FileRepository;
@@ -111,7 +111,7 @@ class MigrateCommand extends Command
     }
 
     /**
-     * @throws \Composite\DB\Exceptions\EntityException
+     * @throws \Composite\Entity\Exceptions\EntityException
      */
     private function generateTableMigration(\ReflectionClass $reflectionClass): ?string
     {

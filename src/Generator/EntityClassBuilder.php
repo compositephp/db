@@ -2,7 +2,7 @@
 
 namespace Composite\DB\Generator;
 
-use Composite\DB\AbstractEntity;
+use Composite\Entity\AbstractEntity;
 use Composite\DB\Generator\Schema\ColumnType;
 use Composite\DB\Generator\Schema\SQLColumn;
 use Composite\DB\Generator\Schema\SQLSchema;
@@ -44,7 +44,7 @@ class EntityClassBuilder
         $constructorParams = $this->getEntityProperties();
         if (!empty($this->schema->columns['deleted_at'])) {
             $traits[] = 'Traits\SoftDelete';
-            $this->useNamespaces[] = 'Composite\DB\Entity\Traits';
+            $this->useNamespaces[] = 'Composite\DB\Traits';
             unset($constructorParams['deleted_at']);
         }
         foreach ($constructorParams as $name => $constructorParam) {

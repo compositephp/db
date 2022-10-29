@@ -3,10 +3,10 @@
 namespace Composite\DB\Tests\Table;
 
 use Composite\DB\AbstractCachedTable;
-use Composite\DB\AbstractEntity;
 use Composite\DB\AbstractTable;
-use Composite\DB\Tests\Table\TestStand\Tables;
 use Composite\DB\Tests\Table\TestStand\Entities;
+use Composite\DB\Tests\Table\TestStand\Tables;
+use Composite\Entity\AbstractEntity;
 use Cycle\Database\Query\SelectQuery;
 
 final class AbstractCachedTableTest extends BaseTableTest
@@ -17,23 +17,23 @@ final class AbstractCachedTableTest extends BaseTableTest
         $cache = self::getCache();
         return [
             [
-                new Tables\TestAutoincrementCachedTable($dbManager, $cache),
-                Entities\TestAutoincrementEntity::fromArray(['id' => 123, 'name' => 'John']),
+                new \Composite\DB\Tests\TestStand\Tables\TestAutoincrementCachedTable($dbManager, $cache),
+                \Composite\DB\Tests\TestStand\Entities\TestAutoincrementEntity::fromArray(['id' => 123, 'name' => 'John']),
                 'sqlite.TestAutoincrement.v1.o.id_123',
             ],
             [
-                new Tables\TestCompositeCachedTable($dbManager, $cache),
-                new Entities\TestCompositeEntity(user_id: 123, post_id: 456, message: 'Text'),
+                new \Composite\DB\Tests\TestStand\Tables\TestCompositeCachedTable($dbManager, $cache),
+                new \Composite\DB\Tests\TestStand\Entities\TestCompositeEntity(user_id: 123, post_id: 456, message: 'Text'),
                 'sqlite.TestComposite.v1.o.user_id_123_post_id_456',
             ],
             [
-                new Tables\TestUniqueCachedTable($dbManager, $cache),
-                new Entities\TestUniqueEntity(id: '123abc', name: 'John'),
+                new \Composite\DB\Tests\TestStand\Tables\TestUniqueCachedTable($dbManager, $cache),
+                new \Composite\DB\Tests\TestStand\Entities\TestUniqueEntity(id: '123abc', name: 'John'),
                 'sqlite.TestUnique.v1.o.id_123abc',
             ],
             [
-                new Tables\TestUniqueCachedTable($dbManager, $cache),
-                new Entities\TestUniqueEntity(
+                new \Composite\DB\Tests\TestStand\Tables\TestUniqueCachedTable($dbManager, $cache),
+                new \Composite\DB\Tests\TestStand\Entities\TestUniqueEntity(
                     id: implode('', array_fill(0, 100, 'a')),
                     name: 'John',
                 ),
@@ -76,7 +76,7 @@ final class AbstractCachedTableTest extends BaseTableTest
      */
     public function test_getCountCacheKey(array $condition, string $expected): void
     {
-        $table = new Tables\TestAutoincrementCachedTable(self::getDatabaseManager(), self::getCache());
+        $table = new \Composite\DB\Tests\TestStand\Tables\TestAutoincrementCachedTable(self::getDatabaseManager(), self::getCache());
         $reflectionMethod = new \ReflectionMethod($table, 'getCountCacheKey');
         $actual = $reflectionMethod->invoke($table, $condition);
         $this->assertEquals($expected, $actual);
@@ -129,7 +129,7 @@ final class AbstractCachedTableTest extends BaseTableTest
      */
     public function test_getListCacheKey(array $condition, array $orderBy, ?int $limit, string $expected): void
     {
-        $table = new Tables\TestAutoincrementCachedTable(self::getDatabaseManager(), self::getCache());
+        $table = new \Composite\DB\Tests\TestStand\Tables\TestAutoincrementCachedTable(self::getDatabaseManager(), self::getCache());
         $reflectionMethod = new \ReflectionMethod($table, 'getListCacheKey');
         $actual = $reflectionMethod->invoke($table, $condition, $orderBy, $limit);
         $this->assertEquals($expected, $actual);
@@ -163,7 +163,7 @@ final class AbstractCachedTableTest extends BaseTableTest
      */
     public function test_getCustomCacheKey(array $parts, string $expected): void
     {
-        $table = new Tables\TestAutoincrementCachedTable(self::getDatabaseManager(), self::getCache());
+        $table = new \Composite\DB\Tests\TestStand\Tables\TestAutoincrementCachedTable(self::getDatabaseManager(), self::getCache());
         $reflectionMethod = new \ReflectionMethod($table, 'buildCacheKey');
         $actual = $reflectionMethod->invoke($table, ...$parts);
         $this->assertEquals($expected, $actual);
@@ -173,8 +173,8 @@ final class AbstractCachedTableTest extends BaseTableTest
     {
         return [
             [
-                new Entities\TestAutoincrementEntity(name: 'foo'),
-                new Tables\TestAutoincrementCachedTable(self::getDatabaseManager(), self::getCache()),
+                new \Composite\DB\Tests\TestStand\Entities\TestAutoincrementEntity(name: 'foo'),
+                new \Composite\DB\Tests\TestStand\Tables\TestAutoincrementCachedTable(self::getDatabaseManager(), self::getCache()),
                 [
                     'sqlite.TestAutoincrement.v1.o.name_foo',
                     'sqlite.TestAutoincrement.v1.l.name_foo',
@@ -182,8 +182,8 @@ final class AbstractCachedTableTest extends BaseTableTest
                 ],
             ],
             [
-                Entities\TestAutoincrementEntity::fromArray(['id' => 123, 'name' => 'bar']),
-                new Tables\TestAutoincrementCachedTable(self::getDatabaseManager(), self::getCache()),
+                \Composite\DB\Tests\TestStand\Entities\TestAutoincrementEntity::fromArray(['id' => 123, 'name' => 'bar']),
+                new \Composite\DB\Tests\TestStand\Tables\TestAutoincrementCachedTable(self::getDatabaseManager(), self::getCache()),
                 [
                     'sqlite.TestAutoincrement.v1.o.name_bar',
                     'sqlite.TestAutoincrement.v1.l.name_bar',
@@ -192,8 +192,8 @@ final class AbstractCachedTableTest extends BaseTableTest
                 ],
             ],
             [
-                new Entities\TestUniqueEntity(id: '123abc', name: 'foo'),
-                new Tables\TestUniqueCachedTable(self::getDatabaseManager(), self::getCache()),
+                new \Composite\DB\Tests\TestStand\Entities\TestUniqueEntity(id: '123abc', name: 'foo'),
+                new \Composite\DB\Tests\TestStand\Tables\TestUniqueCachedTable(self::getDatabaseManager(), self::getCache()),
                 [
                     'sqlite.TestUnique.v1.l.name_foo',
                     'sqlite.TestUnique.v1.c.name_foo',
@@ -201,8 +201,8 @@ final class AbstractCachedTableTest extends BaseTableTest
                 ],
             ],
             [
-                Entities\TestUniqueEntity::fromArray(['id' => '456def', 'name' => 'bar']),
-                new Tables\TestUniqueCachedTable(self::getDatabaseManager(), self::getCache()),
+                \Composite\DB\Tests\TestStand\Entities\TestUniqueEntity::fromArray(['id' => '456def', 'name' => 'bar']),
+                new \Composite\DB\Tests\TestStand\Tables\TestUniqueCachedTable(self::getDatabaseManager(), self::getCache()),
                 [
                     'sqlite.TestUnique.v1.l.name_bar',
                     'sqlite.TestUnique.v1.c.name_bar',

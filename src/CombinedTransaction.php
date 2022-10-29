@@ -3,6 +3,7 @@
 namespace Composite\DB;
 
 use Composite\DB\Exceptions\DbException;
+use Composite\Entity\AbstractEntity;
 use Psr\SimpleCache\CacheInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 
