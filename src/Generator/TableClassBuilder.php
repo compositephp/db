@@ -3,7 +3,8 @@
 namespace Composite\DB\Generator;
 
 use Composite\DB\AbstractTable;
-use Composite\DB\Entity\Schema;
+use Composite\DB\TableConfig;
+use Composite\Entity\Columns\AbstractColumn;
 use Composite\DB\Helpers\ClassHelper;
 use Spiral\Reactor\Aggregator\Methods;
 use Spiral\Reactor\Partial\Method;
@@ -20,7 +21,7 @@ class TableClassBuilder extends AbstractTableClassBuilder
         $this->file
             ->addNamespace(ClassHelper::extractNamespace($this->tableClass))
             ->addUse(AbstractTable::class)
-            ->addUse(Schema::class)
+            ->addUse(TableConfig::class)
             ->addUse($this->schema->class)
             ->addClass(ClassHelper::extractShortName($this->tableClass))
             ->setExtends(AbstractTable::class)
@@ -30,7 +31,7 @@ class TableClassBuilder extends AbstractTableClassBuilder
     private function getMethods(): Methods
     {
         $methods = array_filter([
-            $this->generateGetSchema(),
+            $this->generateGetConfig(),
             $this->generateFindOne(),
             $this->generateFindAll(),
             $this->generateCountAll(),
@@ -40,14 +41,14 @@ class TableClassBuilder extends AbstractTableClassBuilder
 
     protected function generateFindOne(): ?Method
     {
-        if (!$primaryColumns = $this->schema->getPrimaryKeyColumns()) {
-            return null;
-        }
-        $primaryColumnVars = array_map(fn ($column) => $column->name, $primaryColumns);
-        if (count($primaryColumns) === 1) {
-            $body = 'return $this->createEntity($this->findByPkInternal(' . $this->buildVarsList($primaryColumnVars) . '));';
+        $primaryColumns = array_map(
+            fn(string $key): AbstractColumn => $this->schema->getColumn($key) ?? throw new \Exception("Primary key column `$key` not found in entity."),
+            $this->tableConfig->primaryKeys
+        );
+        if (count($this->tableConfig->primaryKeys) === 1) {
+            $body = 'return $this->createEntity($this->findByPkInternal(' . $this->buildVarsList($this->tableConfig->primaryKeys) . '));';
         } else {
-            $body = 'return $this->createEntity($this->findOneInternal(' . $this->buildVarsList($primaryColumnVars) . '));';
+            $body = 'return $this->createEntity($this->findOneInternal(' . $this->buildVarsList($this->tableConfig->primaryKeys) . '));';
         }
         $method = (new Method('findByPk'))
             ->setPublic()

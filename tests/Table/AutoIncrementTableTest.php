@@ -2,36 +2,36 @@
 
 namespace Composite\DB\Tests\Table;
 
-use Composite\DB\Tests\Table\TestStand\Interfaces\IAutoincrementTable;
-use Composite\DB\Tests\Table\TestStand\Tables;
 use Composite\DB\Tests\Table\TestStand\Entities;
+use Composite\DB\Tests\Table\TestStand\Tables;
+use Composite\DB\Tests\TestStand\Interfaces\IAutoincrementTable;
 
 final class AutoIncrementTableTest extends BaseTableTest
 {
     public static function setUpBeforeClass(): void
     {
-        (new TestStand\Tables\TestAutoincrementTable(self::getDatabaseManager()))->init();
-        (new TestStand\Tables\TestAutoincrementSdTable(self::getDatabaseManager()))->init();
+        (new \Composite\DB\Tests\TestStand\Tables\TestAutoincrementTable(self::getDatabaseManager()))->init();
+        (new \Composite\DB\Tests\TestStand\Tables\TestAutoincrementSdTable(self::getDatabaseManager()))->init();
     }
 
     public function crud_dataProvider(): array
     {
         return [
             [
-                new Tables\TestAutoincrementTable(self::getDatabaseManager()),
-                Entities\TestAutoincrementEntity::class,
+                new \Composite\DB\Tests\TestStand\Tables\TestAutoincrementTable(self::getDatabaseManager()),
+                \Composite\DB\Tests\TestStand\Entities\TestAutoincrementEntity::class,
             ],
             [
-                new Tables\TestAutoincrementSdTable(self::getDatabaseManager()),
-                Entities\TestAutoincrementSdEntity::class,
+                new \Composite\DB\Tests\TestStand\Tables\TestAutoincrementSdTable(self::getDatabaseManager()),
+                \Composite\DB\Tests\TestStand\Entities\TestAutoincrementSdEntity::class,
             ],
             [
-                new Tables\TestAutoincrementCachedTable(self::getDatabaseManager(), self::getCache()),
-                Entities\TestAutoincrementEntity::class,
+                new \Composite\DB\Tests\TestStand\Tables\TestAutoincrementCachedTable(self::getDatabaseManager(), self::getCache()),
+                \Composite\DB\Tests\TestStand\Entities\TestAutoincrementEntity::class,
             ],
             [
-                new Tables\TestAutoincrementSdCachedTable(self::getDatabaseManager(), self::getCache()),
-                Entities\TestAutoincrementSdEntity::class,
+                new \Composite\DB\Tests\TestStand\Tables\TestAutoincrementSdCachedTable(self::getDatabaseManager(), self::getCache()),
+                \Composite\DB\Tests\TestStand\Entities\TestAutoincrementSdEntity::class,
             ],
         ];
     }
@@ -65,7 +65,7 @@ final class AutoIncrementTableTest extends BaseTableTest
         $this->assertEntityNotExists($table, $entity->id, $entity->name);
     }
 
-    private function assertEntityExists(IAutoincrementTable $table, Entities\TestAutoincrementEntity $entity): void
+    private function assertEntityExists(IAutoincrementTable $table, \Composite\DB\Tests\TestStand\Entities\TestAutoincrementEntity $entity): void
     {
         $this->assertNotNull($table->findByPk($entity->id));
         $entityFound = array_filter(

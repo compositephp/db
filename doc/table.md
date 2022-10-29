@@ -27,13 +27,13 @@ Example:
 
 ```php
 use Composite\DB\AbstractTable;
-use Composite\DB\Entity\Schema;
+use Composite\DB\TableConfig;
 
 class UsersTable extends AbstractTable
 {
-    protected static function getSchema(): Schema
+    protected function getConfig(): TableConfig
     {
-        return User::schema();
+        return TableConfig::fromEntitySchema(User::schema());
     }
 
     public function findOne(int $id): ?User
@@ -120,7 +120,7 @@ If you worry about concurrency updates during your transaction and want to be su
 data at one time you can use optimistic or pessimistic lock.
 
 ### 1. Optimistic lock
-Add trait `Composite\DB\Entity\Traits\OptimisticLock` to your entity and column `version` (INT NOT NULL DEFAULT 1) to 
+Add trait `Composite\DB\Traits\OptimisticLock` to your entity and column `version` (INT NOT NULL DEFAULT 1) to 
 your table.
 
 ### 2. Pessimistic lock

@@ -33,10 +33,13 @@ class SQLSchema
         $driverClass = $db->getDriver()::class;
         if ($driverClass === SQLiteDriver::class) {
             $tableSql = $db->query(SQLiteSchemaParser::TABLE_SQL, [':tableName' => $tableName])->fetch()['sql'];
-            $indexesSql = array_map(
-                fn (array $row): string => $row['sql'],
-                $db->query(SQLiteSchemaParser::INDEXES_SQL, [':tableName' => $tableName])->fetchAll(),
-            );
+            $indexesRows = $db->query(SQLiteSchemaParser::INDEXES_SQL, [':tableName' => $tableName])->fetchAll();
+            $indexesSql = [];
+            foreach ($indexesRows as $indexRow) {
+                if (!empty($indexRow['sql'])) {
+                    $indexesSql[] = $indexRow['sql'];
+                }
+            }
             $parser = new SQLiteSchemaParser($tableSql, $indexesSql);
             return $parser->getSchema();
         } elseif ($driverClass === MySQLDriver::class) {

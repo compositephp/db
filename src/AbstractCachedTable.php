@@ -3,6 +3,7 @@
 namespace Composite\DB;
 
 use Composite\DB\Exceptions\DbException;
+use Composite\Entity\AbstractEntity;
 use Cycle\Database\DatabaseProviderInterface;
 use Psr\SimpleCache\CacheInterface;
 
@@ -100,7 +101,7 @@ abstract class AbstractCachedTable extends AbstractTable
     private function collectCacheKeysByEntity(AbstractEntity $entity): array
     {
         $keys = $this->getFlushCacheKeys($entity);
-        if (!$entity->isNew() || !$this->getSchema()->hasAutoIncrementPrimaryKey()) {
+        if (!$entity->isNew() || !$this->getConfig()->autoIncrementKey) {
             $keys[] = $this->getOneCacheKey($entity);
         }
         return $keys;

@@ -3,7 +3,7 @@
 namespace <?= $entityNamespace ?? '' ?>;
 
 <?php if (!empty($useAttributes)) : ?>
-use Composite\DB\Entity\Attributes\{<?= implode(', ', $useAttributes) ?>};
+use Composite\DB\Attributes\{<?= implode(', ', $useAttributes) ?>};
 <?php endif; ?>
 <?php foreach($useNamespaces ?? [] as $namespace) : ?>
 use <?=$namespace?>;

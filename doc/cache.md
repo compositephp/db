@@ -39,9 +39,9 @@ Example: imagine you have table with some posts and you want to cache featured p
 ```php
 class PostsTable extends AbstractCachedTable
 {
-    protected function getSchema(): Schema
+    protected function getConfig(): TableConfig
     {
-        return Post::schema();
+        return TableConfig::fromEntitySchema(Post::schema());
     }
 
     public function findByPk(int $id): ?Post

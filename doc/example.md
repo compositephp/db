@@ -8,10 +8,9 @@ All you need is [pdo_sqlite](https://www.php.net/manual/en/ref.pdo-sqlite.php) e
 <?php declare(strict_types=1);
 include 'vendor/autoload.php';
 
-use Composite\DB\AbstractEntity;
-use Composite\DB\Entity\Attributes\PrimaryKey;
-use Composite\DB\Entity\Attributes\Table;
-use Composite\DB\Entity\Schema;
+use Composite\Entity\AbstractEntity;
+use Composite\DB\Attributes\{Table, PrimaryKey};
+use Composite\DB\TableConfig;
 use Cycle\Database\Config;
 use Cycle\Database\DatabaseManager;
 
@@ -38,9 +37,9 @@ enum Status
 
 class UsersTable extends \Composite\DB\AbstractTable
 {
-    protected function getSchema(): Schema
+    protected function getConfig(): TableConfig
     {
-        return User::schema();
+        return TableConfig::fromEntitySchema(User::schema());
     }
 
     public function findByPk(int $id): ?User
@@ -78,9 +77,10 @@ $databaseManager = new DatabaseManager(new Config\DatabaseConfig([
         ),
     ],
 ]));
-$db = $databaseManager->database(User::schema()->getDatabaseName());
-$db->query(
-<<< SQL
+$table = new UsersTable($databaseManager);
+
+$table->getDb()->query(
+    <<< SQL
     CREATE TABLE IF NOT EXISTS Users
     (
         `id`         INTEGER
@@ -94,8 +94,6 @@ $db->query(
     );
 SQL
 );
-
-$table = new UsersTable($databaseManager);
 
 //Create
 $user = new User(
@@ -123,5 +121,4 @@ $table->save($foundUser);
 $table->delete($foundUser);
 
 echo "Total active users after delete: " . $table->countAllActive() . PHP_EOL;
-
 ```

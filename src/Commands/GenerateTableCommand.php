@@ -2,10 +2,11 @@
 
 namespace Composite\DB\Commands;
 
-use Composite\DB\AbstractEntity;
-use Composite\DB\Entity\Attributes;
+use Composite\DB\Attributes;
 use Composite\DB\Generator\CachedTableClassBuilder;
 use Composite\DB\Generator\TableClassBuilder;
+use Composite\DB\TableConfig;
+use Composite\Entity\AbstractEntity;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -33,6 +34,7 @@ class GenerateTableCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        /** @var class-string<AbstractEntity> $entityClass */
         $entityClass = $input->getArgument('entity');
         $reflection = new \ReflectionClass($entityClass);
 
@@ -40,11 +42,8 @@ class GenerateTableCommand extends Command
             return $this->showError($output, "Class `$entityClass` must be subclass of " . AbstractEntity::class);
         }
         $schema = $entityClass::schema();
-        $tableName = $schema->getTableName();
-        $dbName = $schema->getDatabaseName();
-        if (!$tableName || !$dbName) {
-            return $this->showError($output, "Entity `$entityClass` must have attribute " . Attributes\Table::class);
-        }
+        $tableConfig = TableConfig::fromEntitySchema($schema);
+        $tableName = $tableConfig->tableName;
 
         if (!$tableClass = $input->getArgument('table')) {
             $proposedClass = preg_replace('/\w+$/', 'Tables', $reflection->getNamespaceName()) . "\\{$tableName}Table";
@@ -66,13 +65,15 @@ class GenerateTableCommand extends Command
         }
         if ($input->getOption('cached')) {
             $template = new CachedTableClassBuilder(
-                schema: $schema,
                 tableClass: $tableClass,
+                schema: $schema,
+                tableConfig: $tableConfig,
             );
         } else {
             $template = new TableClassBuilder(
-                schema: $schema,
                 tableClass: $tableClass,
+                schema: $schema,
+                tableConfig: $tableConfig,
             );
         }
         $template->generate();

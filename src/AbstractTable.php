@@ -2,9 +2,9 @@
 
 namespace Composite\DB;
 
-use Composite\DB\Entity\Schema;
+use Composite\Entity\AbstractEntity;
 use Composite\DB\Exceptions\DbException;
-use Composite\DB\Exceptions\EntityException;
+use Composite\Entity\Exceptions\EntityException;
 use Cycle\Database\DatabaseInterface;
 use Cycle\Database\DatabaseProviderInterface;
 use Cycle\Database\Query\SelectQuery;
@@ -14,11 +14,11 @@ abstract class AbstractTable
     protected DatabaseInterface $db;
     private ?SelectQuery $selectQuery = null;
 
-    abstract protected function getSchema(): Schema;
+    abstract protected function getConfig(): TableConfig;
 
     public function __construct(DatabaseProviderInterface $databaseProvider)
     {
-        $this->db = $databaseProvider->database($this->getDatabaseName());
+        $this->db = $databaseProvider->database($this->getConfig()->dbName);
     }
 
     public function getDb(): DatabaseInterface
@@ -41,8 +41,8 @@ abstract class AbstractTable
                 ->values($insertData)
                 ->run();
 
-            if ($returnedValue && ($autoIncrementColumn = $this->getSchema()->getAutoIncrementColumn())) {
-                $insertData[$autoIncrementColumn->name] = $autoIncrementColumn->cast($returnedValue);
+            if ($returnedValue && ($autoIncrementKey = $this->getConfig()->autoIncrementKey)) {
+                $insertData[$autoIncrementKey] = intval($returnedValue);
                 $entity = $entity::fromArray($insertData);
             } else {
                 $entity->resetChangedColumns();
@@ -54,7 +54,7 @@ abstract class AbstractTable
             $where = $this->getPkCondition($entity);
             $this->enrichCondition($where);
 
-            if ($this->getSchema()->isOptimisticLock && isset($entity->version)) {
+            if ($this->getConfig()->isOptimisticLock && isset($entity->version)) {
                 $currentVersion = $entity->version;
                 $this->transaction(function () use ($changedColumns, $where, $entity, $currentVersion) {
                     $this->db->update(
@@ -103,7 +103,7 @@ abstract class AbstractTable
     public function delete(AbstractEntity &$entity): void
     {
         $this->checkEntityIsLegal($entity);
-        if ($this->getSchema()->isSoftDelete) {
+        if ($this->getConfig()->isSoftDelete) {
             if (method_exists($entity, 'delete')) {
                 $entity->delete();
                 $this->save($entity);
@@ -175,12 +175,12 @@ abstract class AbstractTable
 
     public function getTableName(): string
     {
-        return $this->getSchema()->getTableName() ?? throw new EntityException($this->getSchema()->class  . ' must have #[Table] attribute');
+        return $this->getConfig()->tableName;
     }
 
     public function getDatabaseName(): string
     {
-        return $this->getSchema()->getDatabaseName() ?? throw new EntityException($this->getSchema()->class  . ' must have #[Table] attribute');
+        return $this->getConfig()->dbName;
     }
 
     final protected function createEntity(mixed $data): mixed
@@ -189,9 +189,9 @@ abstract class AbstractTable
             return null;
         }
         try {
-            /** @var AbstractEntity $class */
-            $class = $this->getSchema()->class;
-            return $class::fromArray($data);
+            /** @psalm-var class-string<AbstractEntity> $entityClass */
+            $entityClass = $this->getConfig()->entityClass;
+            return $entityClass::fromArray($data);
         } catch (\Throwable) {
             return null;
         }
@@ -203,14 +203,14 @@ abstract class AbstractTable
             return [];
         }
         try {
-            /** @var AbstractEntity $class */
-            $class = $this->getSchema()->class;
+            /** @psalm-var class-string<AbstractEntity> $entityClass */
+            $entityClass = $this->getConfig()->entityClass;
             $result = [];
             foreach ($data as $datum) {
                 if (!is_array($datum)) {
                     continue;
                 }
-                $result[] = $class::fromArray($datum);
+                $result[] = $entityClass::fromArray($datum);
             }
         } catch (\Throwable) {
             return [];
@@ -225,12 +225,12 @@ abstract class AbstractTable
             $data = $data->toArray();
         }
         if (is_array($data)) {
-            foreach ($this->getSchema()->getPrimaryKeyColumns() as $column) {
-                $condition[$column->name] = $data[$column->name] ?? null;
+            foreach ($this->getConfig()->primaryKeys as $key) {
+                $condition[$key] = $data[$key] ?? null;
             }
         } else {
-            foreach ($this->getSchema()->getPrimaryKeyColumns() as $column) {
-                $condition[$column->name] = $data;
+            foreach ($this->getConfig()->primaryKeys as $key) {
+                $condition[$key] = $data;
             }
         }
         return $condition;
@@ -238,19 +238,19 @@ abstract class AbstractTable
 
     protected function enrichCondition(array &$condition): void
     {
-        if ($this->getSchema()->isSoftDelete && !isset($condition['deleted_at'])) {
+        if ($this->getConfig()->isSoftDelete && !isset($condition['deleted_at'])) {
             $condition['deleted_at'] = null;
         }
     }
 
     private function checkEntityIsLegal(AbstractEntity $entity): void
     {
-        if ($entity::class !== $this->getSchema()->class) {
+        if ($entity::class !== $this->getConfig()->entityClass) {
             throw new EntityException(
                 sprintf('Illegal entity `%s` passed to `%s`, only `%s` is allowed',
                     $entity::class,
                     $this::class,
-                    $this->getSchema()->class,
+                    $this->getConfig()->entityClass,
                 )
             );
         }
