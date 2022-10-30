@@ -11,6 +11,7 @@ use Cycle\Database\Query\SelectQuery;
 
 abstract class AbstractTable
 {
+    protected readonly TableConfig $config;
     protected DatabaseInterface $db;
     private ?SelectQuery $selectQuery = null;
 
@@ -18,7 +19,8 @@ abstract class AbstractTable
 
     public function __construct(DatabaseProviderInterface $databaseProvider)
     {
-        $this->db = $databaseProvider->database($this->getConfig()->dbName);
+        $this->config = $this->getConfig();
+        $this->db = $databaseProvider->database($this->config->dbName);
     }
 
     public function getDb(): DatabaseInterface
@@ -33,7 +35,7 @@ abstract class AbstractTable
      */
     public function save(AbstractEntity &$entity): void
     {
-        $this->checkEntityIsLegal($entity);
+        $this->config->checkEntity($entity);
         if ($entity->isNew()) {
             $insertData = $entity->toArray();
             $returnedValue = $this->db
@@ -41,7 +43,7 @@ abstract class AbstractTable
                 ->values($insertData)
                 ->run();
 
-            if ($returnedValue && ($autoIncrementKey = $this->getConfig()->autoIncrementKey)) {
+            if ($returnedValue && ($autoIncrementKey = $this->config->autoIncrementKey)) {
                 $insertData[$autoIncrementKey] = intval($returnedValue);
                 $entity = $entity::fromArray($insertData);
             } else {
@@ -54,7 +56,7 @@ abstract class AbstractTable
             $where = $this->getPkCondition($entity);
             $this->enrichCondition($where);
 
-            if ($this->getConfig()->isOptimisticLock && isset($entity->version)) {
+            if ($this->config->isOptimisticLock && isset($entity->version)) {
                 $currentVersion = $entity->version;
                 $this->transaction(function () use ($changedColumns, $where, $entity, $currentVersion) {
                     $this->db->update(
@@ -102,8 +104,8 @@ abstract class AbstractTable
      */
     public function delete(AbstractEntity &$entity): void
     {
-        $this->checkEntityIsLegal($entity);
-        if ($this->getConfig()->isSoftDelete) {
+        $this->config->checkEntity($entity);
+        if ($this->config->isSoftDelete) {
             if (method_exists($entity, 'delete')) {
                 $entity->delete();
                 $this->save($entity);
@@ -140,14 +142,6 @@ abstract class AbstractTable
         return $this->db->transaction($callback, $isolationLevel);
     }
 
-    protected function select(): SelectQuery
-    {
-        if ($this->selectQuery === null) {
-            $this->selectQuery = $this->db->select()->from($this->getTableName());
-        }
-        return clone $this->selectQuery;
-    }
-
     protected function findByPkInternal(mixed $pk): ?array
     {
         $where = $this->getPkCondition($pk);
@@ -175,12 +169,12 @@ abstract class AbstractTable
 
     public function getTableName(): string
     {
-        return $this->getConfig()->tableName;
+        return $this->config->tableName;
     }
 
     public function getDatabaseName(): string
     {
-        return $this->getConfig()->dbName;
+        return $this->config->dbName;
     }
 
     final protected function createEntity(mixed $data): mixed
@@ -190,7 +184,7 @@ abstract class AbstractTable
         }
         try {
             /** @psalm-var class-string<AbstractEntity> $entityClass */
-            $entityClass = $this->getConfig()->entityClass;
+            $entityClass = $this->config->entityClass;
             return $entityClass::fromArray($data);
         } catch (\Throwable) {
             return null;
@@ -204,7 +198,7 @@ abstract class AbstractTable
         }
         try {
             /** @psalm-var class-string<AbstractEntity> $entityClass */
-            $entityClass = $this->getConfig()->entityClass;
+            $entityClass = $this->config->entityClass;
             $result = [];
             foreach ($data as $datum) {
                 if (!is_array($datum)) {
@@ -225,11 +219,11 @@ abstract class AbstractTable
             $data = $data->toArray();
         }
         if (is_array($data)) {
-            foreach ($this->getConfig()->primaryKeys as $key) {
+            foreach ($this->config->primaryKeys as $key) {
                 $condition[$key] = $data[$key] ?? null;
             }
         } else {
-            foreach ($this->getConfig()->primaryKeys as $key) {
+            foreach ($this->config->primaryKeys as $key) {
                 $condition[$key] = $data;
             }
         }
@@ -238,21 +232,16 @@ abstract class AbstractTable
 
     protected function enrichCondition(array &$condition): void
     {
-        if ($this->getConfig()->isSoftDelete && !isset($condition['deleted_at'])) {
+        if ($this->config->isSoftDelete && !isset($condition['deleted_at'])) {
             $condition['deleted_at'] = null;
         }
     }
 
-    private function checkEntityIsLegal(AbstractEntity $entity): void
+    protected function select(): SelectQuery
     {
-        if ($entity::class !== $this->getConfig()->entityClass) {
-            throw new EntityException(
-                sprintf('Illegal entity `%s` passed to `%s`, only `%s` is allowed',
-                    $entity::class,
-                    $this::class,
-                    $this->getConfig()->entityClass,
-                )
-            );
+        if ($this->selectQuery === null) {
+            $this->selectQuery = $this->db->select()->from($this->getTableName());
         }
+        return clone $this->selectQuery;
     }
 }

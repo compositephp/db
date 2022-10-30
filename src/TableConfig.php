@@ -3,6 +3,7 @@
 namespace Composite\DB;
 
 use Composite\DB\Attributes;
+use Composite\Entity\AbstractEntity;
 use Composite\Entity\Exceptions\EntityException;
 use Composite\Entity\Schema;
 
@@ -67,5 +68,18 @@ class TableConfig
             isSoftDelete: $isSoftDelete,
             isOptimisticLock: $isOptimisticLock,
         );
+    }
+
+    public function checkEntity(AbstractEntity $entity): void
+    {
+        if ($entity::class !== $this->entityClass) {
+            throw new EntityException(
+                sprintf('Illegal entity `%s` passed to `%s`, only `%s` is allowed',
+                    $entity::class,
+                    $this::class,
+                    $this->entityClass,
+                )
+            );
+        }
     }
 }
