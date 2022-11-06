@@ -64,13 +64,14 @@ class PostgresSchemaParser
         )->fetchAllAssociative();
 
         if ($primaryKeySQL = PostgresSchemaParser::getPrimaryKeySQL($tableName)) {
-            $this->primaryKeys = array_map(
+            $primaryKeys = array_map(
                 fn(array $row): string => $row['column_name'],
                 $connection->executeQuery($primaryKeySQL)->fetchAllAssociative()
             );
         } else {
-            $this->primaryKeys = [];
+            $primaryKeys = [];
         }
+        $this->primaryKeys = $primaryKeys;
 
         $allEnumsRaw = $connection->executeQuery(PostgresSchemaParser::ALL_ENUMS_SQL)->fetchAllAssociative();
         $allEnums = [];

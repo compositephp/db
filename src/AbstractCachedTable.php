@@ -147,7 +147,7 @@ abstract class AbstractCachedTable extends AbstractTable
     }
 
     /**
-     * @param array<string, mixed> $condition
+     * @param array<string, mixed> $whereParams
      */
     protected function countAllCachedInternal(
         string $whereString = '',
@@ -243,14 +243,12 @@ abstract class AbstractCachedTable extends AbstractTable
         if ($parts) {
             $formattedParts = [];
             foreach ($parts as $part) {
-                if ($part === '' || $part === 0) continue;
                 if (is_array($part)) {
                     $string = json_encode($part);
-                    $formattedParts[] = $this->formatStringForCacheKey($string);
                 } else {
                     $string = strval($part);
-                    $formattedParts[] = $this->formatStringForCacheKey($string);
                 }
+                $formattedParts[] = $this->formatStringForCacheKey($string);
             }
             $key = implode('.', $formattedParts);
         } else {
