@@ -77,7 +77,7 @@ class GenerateTableCommand extends Command
             );
         }
         $template->generate();
-        $file = $template->getFile();
+        $fileContent = $template->getFileContent();
 
         $fileState = 'new';
         if (!$filePath = $this->getClassFilePath($tableClass)) {
@@ -89,7 +89,7 @@ class GenerateTableCommand extends Command
             }
             $fileState = 'overwrite';
         }
-        file_put_contents($filePath, $file->render());
+        file_put_contents($filePath, $fileContent);
         return $this->showSuccess($output, "File `$filePath` was successfully generated ($fileState)");
     }
 }

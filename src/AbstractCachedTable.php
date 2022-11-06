@@ -4,7 +4,6 @@ namespace Composite\DB;
 
 use Composite\DB\Exceptions\DbException;
 use Composite\Entity\AbstractEntity;
-use Cycle\Database\DatabaseProviderInterface;
 use Psr\SimpleCache\CacheInterface;
 
 abstract class AbstractCachedTable extends AbstractTable
@@ -12,10 +11,9 @@ abstract class AbstractCachedTable extends AbstractTable
     protected const CACHE_VERSION = 1;
 
     public function __construct(
-        DatabaseProviderInterface $databaseProvider,
         protected CacheInterface $cache,
     ) {
-        parent::__construct($databaseProvider);
+        parent::__construct();
     }
 
     /**
@@ -28,7 +26,7 @@ abstract class AbstractCachedTable extends AbstractTable
      */
     public function save(AbstractEntity &$entity): void
     {
-        $this->transaction(function () use (&$entity) {
+        $this->getConnection()->transactional(function () use (&$entity) {
             $cacheKeys = $this->collectCacheKeysByEntity($entity);
             parent::save($entity);
             if ($cacheKeys && !$this->cache->deleteMultiple(array_unique($cacheKeys))) {
@@ -44,7 +42,7 @@ abstract class AbstractCachedTable extends AbstractTable
      */
     public function saveMany(array $entities): array
     {
-        return $this->transaction(function() use ($entities) {
+        return $this->getConnection()->transactional(function() use ($entities) {
             $cacheKeys = [];
             foreach ($entities as $entity) {
                 $cacheKeys = array_merge($cacheKeys, $this->collectCacheKeysByEntity($entity));
@@ -64,7 +62,7 @@ abstract class AbstractCachedTable extends AbstractTable
      */
     public function delete(AbstractEntity &$entity): void
     {
-        $this->transaction(function () use (&$entity) {
+        $this->getConnection()->transactional(function () use (&$entity) {
             $cacheKeys = $this->collectCacheKeysByEntity($entity);
             parent::delete($entity);
             if ($cacheKeys && !$this->cache->deleteMultiple(array_unique($cacheKeys))) {
@@ -79,7 +77,7 @@ abstract class AbstractCachedTable extends AbstractTable
      */
     public function deleteMany(array $entities): bool
     {
-        return $this->transaction(function() use ($entities) {
+        return $this->getConnection()->transactional(function() use ($entities) {
             $cacheKeys = [];
             foreach ($entities as $entity) {
                 $cacheKeys = array_merge($cacheKeys, $this->collectCacheKeysByEntity($entity));
@@ -130,32 +128,36 @@ abstract class AbstractCachedTable extends AbstractTable
     }
 
     /**
-     * @param array<string, mixed> $condition
-     * @param array<string, string>|string $orderBy see \Cycle\Database\Query\SelectQuery::orderBy for format
+     * @param array<string, string>|string $orderBy
      * @return array<string, mixed>[]
      */
     protected function findAllCachedInternal(
-        array $condition = [],
+        string $whereString = '',
+        array $whereParams = [],
         array|string $orderBy = [],
         ?int $limit = null,
         null|int|\DateInterval $ttl = null,
     ): array
     {
         return $this->getCached(
-            $this->getListCacheKey($condition, $orderBy, $limit),
-            fn() => $this->findAllInternal($condition, $orderBy, $limit),
+            $this->getListCacheKey($whereString, $whereParams, $orderBy, $limit),
+            fn() => $this->findAllInternal(whereString: $whereString, whereParams: $whereParams, orderBy: $orderBy, limit: $limit),
             $ttl,
         );
     }
 
     /**
-     * @param array<string, mixed> $condition
+     * @param array<string, mixed> $whereParams
      */
-    protected function countAllCachedInternal(array $condition = [], null|int|\DateInterval $ttl = null): int
+    protected function countAllCachedInternal(
+        string $whereString = '',
+        array $whereParams = [],
+        null|int|\DateInterval $ttl = null,
+    ): int
     {
         return (int)$this->getCached(
-            $this->getCountCacheKey($condition),
-            fn() => $this->countAllInternal($condition),
+            $this->getCountCacheKey($whereString, $whereParams),
+            fn() => $this->countAllInternal(whereString: $whereString, whereParams: $whereParams),
             $ttl,
         );
     }
@@ -207,21 +209,31 @@ abstract class AbstractCachedTable extends AbstractTable
         return $this->buildCacheKey('o', $condition ?: 'one');
     }
 
-    protected function getListCacheKey(array $condition = [], array|string $orderBy = [], ?int $limit = null): string
+    protected function getListCacheKey(
+        string $whereString = '',
+        array $whereParams = [],
+        array|string $orderBy = [],
+        ?int $limit = null
+    ): string
     {
+        $wherePart = $this->prepareWhereKey($whereString, $whereParams);
         return $this->buildCacheKey(
             'l',
-            $condition ?: 'all',
+            $wherePart ?? 'all',
             $orderBy ? ['ob' => $orderBy] : null,
             $limit ? ['limit' => $limit] : null,
         );
     }
 
-    protected function getCountCacheKey(array $condition = []): string
+    protected function getCountCacheKey(
+        string $whereString = '',
+        array $whereParams = [],
+    ): string
     {
+        $wherePart = $this->prepareWhereKey($whereString, $whereParams);
         return $this->buildCacheKey(
             'c',
-            $condition ?: 'all',
+            $wherePart ?? 'all',
         );
     }
 
@@ -231,19 +243,19 @@ abstract class AbstractCachedTable extends AbstractTable
         if ($parts) {
             $formattedParts = [];
             foreach ($parts as $part) {
-                if ($part === '' || $part === 0) continue;
                 if (is_array($part)) {
-                    $formattedParts[] = $this->formatArray($part);
+                    $string = json_encode($part);
                 } else {
-                    $formattedParts[] = strval($part);
+                    $string = strval($part);
                 }
+                $formattedParts[] = $this->formatStringForCacheKey($string);
             }
             $key = implode('.', $formattedParts);
         } else {
             $key = 'all';
         }
         $key = implode('.', [
-            $this->getDatabaseName(),
+            $this->getConnectionName(),
             $this->getTableName(),
             'v' . static::CACHE_VERSION,
             $key
@@ -254,10 +266,26 @@ abstract class AbstractCachedTable extends AbstractTable
         return $key;
     }
 
-    private function formatArray(array $array): string
+    private function formatStringForCacheKey(string $string): string
     {
-        $string = json_encode($array);
-        $string = str_replace([':', ',', '>', '<'], ['_', '_', 'gt', 'lt'], $string);
-        return preg_replace('/[^a-zA-Z0-9_]/', '', $string);
+        $string = mb_strtolower($string);
+        $string = str_replace(['!=', '<>', '>', '<', '='], ['_not_', '_not_', '_gt_', '_lt_', '_eq_'], $string);
+        $string =  preg_replace('/\W/', '_', $string);
+        return trim(preg_replace('/_+/', '_', $string), '_');
+    }
+
+    private function prepareWhereKey(string $whereString, array $whereParams): ?string
+    {
+        if (!$whereString) {
+            return null;
+        }
+        if (!$whereParams) {
+            return $whereString;
+        }
+        return str_replace(
+            array_map(fn (string $key): string => ':' . $key, array_keys($whereParams)),
+            array_values($whereParams),
+            $whereString,
+        );
     }
 }

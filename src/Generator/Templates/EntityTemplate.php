@@ -1,5 +1,6 @@
 <?= $phpOpener ?? '' ?>
 
+
 namespace <?= $entityNamespace ?? '' ?>;
 
 <?php if (!empty($useAttributes)) : ?>
@@ -9,7 +10,7 @@ use Composite\DB\Attributes\{<?= implode(', ', $useAttributes) ?>};
 use <?=$namespace?>;
 <?php endforeach; ?>
 
-#[Table(db: '<?= $dbName ?? '' ?>', name: '<?= $tableName ?? '' ?>')]
+#[Table(connection: '<?= $connectionName ?? '' ?>', name: '<?= $tableName ?? '' ?>')]
 <?php foreach($indexes ?? [] as $index) : ?>
 <?=$index?>
 

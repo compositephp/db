@@ -2,20 +2,18 @@
 
 namespace Composite\DB\Commands;
 
+use Composite\DB\ConnectionManager;
 use Composite\DB\Generator\EntityClassBuilder;
 use Composite\DB\Generator\EnumClassBuilder;
 use Composite\DB\Generator\Schema\SQLEnum;
 use Composite\DB\Generator\Schema\SQLSchema;
 use Composite\DB\Helpers\ClassHelper;
-use Cycle\Database\DatabaseProviderInterface;
-use Cycle\Database\TableInterface;
 use Doctrine\Inflector\Rules\English\InflectorFactory;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Symfony\Component\Console\Question\Question;
 
@@ -25,18 +23,11 @@ class GenerateEntityCommand extends Command
 
     protected static $defaultName = 'composite-db:generate-entity';
 
-    public function __construct(
-        private readonly DatabaseProviderInterface $dbProvider,
-    )
-    {
-        parent::__construct();
-    }
-
     protected function configure(): void
     {
         $this
-            ->addArgument('db', InputArgument::REQUIRED, 'Database name')
-            ->addArgument('table', InputArgument::OPTIONAL, 'Table name')
+            ->addArgument('connection', InputArgument::REQUIRED, 'Connection name')
+            ->addArgument('table', InputArgument::REQUIRED, 'Table name')
             ->addArgument('entity', InputArgument::OPTIONAL, 'Entity full class name')
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'If existing file should be overwritten');
     }
@@ -46,38 +37,23 @@ class GenerateEntityCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $dbName = $input->getArgument('db');
-        $db = $this->dbProvider->database($dbName);
+        $connectionName = $input->getArgument('connection');
+        $tableName = $input->getArgument('table');
+        $connection = ConnectionManager::getConnection($connectionName);
 
-        if (!$tableName = $input->getArgument('table')) {
-            $tableName = $this->ask(
-                $input,
-                $output,
-                new ChoiceQuestion(
-                    'Pick Table: ',
-                    array_map(
-                        fn(TableInterface $Table) => $Table->getName(),
-                        $db->getTables()
-                    )
-                )
-            );
-        }
-        if (!$db->table($tableName)->exists()) {
-            return $this->showError($output, "Table `$tableName` does not exist");
-        }
         if (!$entityClass = $input->getArgument('entity')) {
             $entityClass = $this->ask($input, $output, new Question('Enter entity full class name: '));
         }
         $entityClass = str_replace('\\\\', '\\', $entityClass);
 
-        $schema = SQLSchema::generate($db, $tableName);
+        $schema = SQLSchema::generate($connection, $tableName);
         $enums = [];
         foreach ($schema->enums as $columnName => $sqlEnum) {
             if ($enumClass = $this->generateEnum($input, $output, $entityClass, $sqlEnum)) {
                 $enums[$columnName] = $enumClass;
             }
         }
-        $entityBuilder = new EntityClassBuilder($schema, $dbName, $entityClass, $enums);
+        $entityBuilder = new EntityClassBuilder($schema, $connectionName, $entityClass, $enums);
         $content = $entityBuilder->getClassContent();
 
         $this->saveClassToFile($input, $output, $entityClass, $content);

@@ -2,8 +2,6 @@
 
 namespace Composite\DB\Generator\Schema;
 
-use Composite\DB\Migrations\Config;
-
 class SQLColumn
 {
     public function __construct(
@@ -27,7 +25,7 @@ class SQLColumn
         if ($this->size === null) {
             return true;
         }
-        return $this->size === Config::DEFAULT_STRING_SIZE;
+        return $this->size === 255;
     }
 
     public function getColumnAttributeProperties(): array

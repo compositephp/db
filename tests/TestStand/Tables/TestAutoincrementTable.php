@@ -29,19 +29,23 @@ class TestAutoincrementTable extends AbstractTable implements IAutoincrementTabl
      */
     public function findAllByName(string $name): array
     {
-        return $this->createEntities($this->findAllInternal([
-            'name' => $name,
-        ]));
+        return $this->createEntities($this->findAllInternal(
+            'name = :name',
+            ['name' => $name],
+        ));
     }
 
     public function countAllByName(string $name): int
     {
-        return $this->countAllInternal(['name' => $name]);
+        return $this->countAllInternal(
+            'name = :name',
+            ['name' => $name]
+        );
     }
 
     public function init(): bool
     {
-        $this->db->execute(
+        $this->getConnection()->executeStatement(
             "
             CREATE TABLE IF NOT EXISTS {$this->getTableName()}
             (
@@ -56,6 +60,6 @@ class TestAutoincrementTable extends AbstractTable implements IAutoincrementTabl
 
     public function truncate(): void
     {
-        $this->db->execute("DELETE FROM {$this->getTableName()} WHERE 1");
+        $this->getConnection()->executeStatement("DELETE FROM {$this->getTableName()} WHERE 1");
     }
 }

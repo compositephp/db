@@ -82,7 +82,7 @@ Table Entity:
 ```php
 use Composite\DB\Attributes\{Table, PrimaryKey};
 
-#[Table(db: 'dbName', name: 'Users')]
+#[Table(connection: 'dbName', name: 'Users')]
 class User extends AbstractEntity
 {
     #[PrimaryKey(autoIncrement: true)]

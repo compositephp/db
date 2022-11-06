@@ -10,7 +10,7 @@ use Composite\Entity\Schema;
 class TableConfig
 {
     public function __construct(
-        public readonly string $dbName,
+        public readonly string $connectionName,
         public readonly string $tableName,
         public readonly string $entityClass,
         public readonly array $primaryKeys,
@@ -60,7 +60,7 @@ class TableConfig
             }
         }
         return new TableConfig(
-            dbName: $tableAttribute->db,
+            connectionName: $tableAttribute->connection,
             tableName: $tableAttribute->name,
             entityClass: $schema->class,
             primaryKeys: $primaryKeys,

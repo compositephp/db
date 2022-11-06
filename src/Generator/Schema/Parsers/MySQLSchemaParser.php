@@ -7,13 +7,25 @@ use Composite\DB\Generator\Schema\SQLColumn;
 use Composite\DB\Generator\Schema\SQLEnum;
 use Composite\DB\Generator\Schema\SQLIndex;
 use Composite\DB\Generator\Schema\SQLSchema;
+use Doctrine\DBAL\Connection;
 use iamcal\SQLParser;
 
 class MySQLSchemaParser
 {
+    private readonly string $sql;
+
+    /**
+     * @throws \Exception
+     */
     public function __construct(
-        private readonly string $sql,
-    ) {}
+        Connection $connection,
+        string $tableName,
+    ) {
+        $showResult = $connection
+            ->executeQuery("SHOW CREATE TABLE $tableName")
+            ->fetchAssociative();
+        $this->sql = $showResult['Create Table'] ?? throw new \Exception("Table `$tableName` not found");
+    }
 
     public function getSchema(): SQLSchema
     {
@@ -60,13 +72,10 @@ class MySQLSchemaParser
         }
         foreach ($table['indexes'] as $index) {
             $indexType = strtolower($index['type']);
-            $cols = $sort = [];
+            $cols = [];
             foreach ($index['cols'] as $col) {
                 $colName = $col['name'];
                 $cols[] = $colName;
-                if (!empty($col['direction'])) {
-                    $sort[$colName] = $col['direction'];
-                }
             }
             if ($indexType === 'primary') {
                 $primaryKeys = $cols;
@@ -76,7 +85,6 @@ class MySQLSchemaParser
                 name: $index['name'] ?? null,
                 isUnique: $indexType === 'unique',
                 columns: $cols,
-                sort: $sort,
             );
         }
         return new SQLSchema(

@@ -10,5 +10,6 @@ class Column
         public readonly ?int $size = null,
         public readonly ?int $precision = null,
         public readonly ?int $scale = null,
+        public readonly ?bool $unsigned = null,
     ) {}
 }

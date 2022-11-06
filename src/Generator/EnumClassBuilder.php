@@ -2,18 +2,15 @@
 
 namespace Composite\DB\Generator;
 
-use Spiral\Reactor\Aggregator\EnumCases;
-use Spiral\Reactor\FileDeclaration;
-use Spiral\Reactor\Partial\EnumCase;
+use Nette\PhpGenerator\EnumCase;
+use Nette\PhpGenerator\PhpFile;
 
 class EnumClassBuilder
 {
     public function __construct(
         private readonly string $enumClass,
         private readonly array $cases,
-    )
-    {
-    }
+    ) {}
 
     /**
      * @throws \Exception
@@ -24,27 +21,12 @@ class EnumClassBuilder
         foreach ($this->cases as $case) {
             $enumCases[] = new EnumCase($case);
         }
-        $file = new FileDeclaration();
+        $file = new PhpFile();
         $file
+            ->setStrictTypes()
             ->addEnum($this->enumClass)
-            ->setCases(new EnumCases($enumCases));
+            ->setCases($enumCases);
 
-        return $file->render();
-    }
-
-    /**
-     * @throws \Exception
-     */
-    private function getVars(): array
-    {
-        if (!preg_match('/^(.+)\\\(\w+)$/', $this->enumClass, $matches)) {
-            throw new \Exception("Entity class `$this->enumClass` is incorrect");
-        }
-        return [
-            'phpOpener' => '<?php declare(strict_types=1);',
-            'enumNamespace' => $matches[1],
-            'enumClassShortname' => $matches[2],
-            'cases' => $this->cases,
-        ];
+        return (string)$file;
     }
 }

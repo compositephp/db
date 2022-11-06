@@ -17,8 +17,8 @@ class TestCompositeSdCachedTable extends \Composite\DB\AbstractCachedTable imple
     protected function getFlushCacheKeys(TestCompositeSdEntity|AbstractEntity $entity): array
     {
         return [
-            $this->getListCacheKey(['user_id' => $entity->user_id]),
-            $this->getCountCacheKey(['user_id' => $entity->user_id]),
+            $this->getListCacheKey('user_id = :user_id', ['user_id' => $entity->user_id]),
+            $this->getCountCacheKey('user_id = :user_id', ['user_id' => $entity->user_id]),
         ];
     }
 
@@ -37,17 +37,23 @@ class TestCompositeSdCachedTable extends \Composite\DB\AbstractCachedTable imple
     {
         return array_map(
             fn (array $data) => TestCompositeSdEntity::fromArray($data),
-            $this->findAllCachedInternal(['user_id' => $userId])
+            $this->findAllCachedInternal(
+                'user_id = :user_id',
+                ['user_id' => $userId],
+            )
         );
     }
 
     public function countAllByUser(int $userId): int
     {
-        return $this->countAllCachedInternal(['user_id' => $userId]);
+        return $this->countAllCachedInternal(
+            'user_id = :user_id',
+            ['user_id' => $userId],
+        );
     }
 
     public function truncate(): void
     {
-        $this->db->execute("DELETE FROM {$this->getTableName()} WHERE 1");
+        $this->getConnection()->executeStatement("DELETE FROM {$this->getTableName()} WHERE 1");
     }
 }

@@ -7,6 +7,7 @@ use Composite\DB\Generator\Schema\SQLColumn;
 use Composite\DB\Generator\Schema\SQLEnum;
 use Composite\DB\Generator\Schema\SQLIndex;
 use Composite\DB\Generator\Schema\SQLSchema;
+use Doctrine\DBAL\Connection;
 
 class PostgresSchemaParser
 {
@@ -20,12 +21,12 @@ class PostgresSchemaParser
         WHERE schemaname = 'public' AND tablename = :tableName;
      ";
 
-    public const PRIMARY_KEY_SQL = "
+    public const PRIMARY_KEY_SQL = <<<SQL
         SELECT a.attname as column_name
         FROM pg_index i
         JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY (i.indkey)
-        WHERE i.indrelid = '\":tableName\"'::regclass AND i.indisprimary;
-     ";
+        WHERE i.indrelid = '":tableName"'::regclass AND i.indisprimary;
+     SQL;
 
     public const ALL_ENUMS_SQL = "
         SELECT t.typname as enum_name, e.enumlabel as enum_value
@@ -34,6 +35,12 @@ class PostgresSchemaParser
         JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
         WHERE n.nspname = 'public';
     ";
+
+    private readonly string $tableName;
+    private readonly array $informationSchemaColumns;
+    private readonly array $informationSchemaIndexes;
+    private readonly array $primaryKeys;
+    private readonly array $allEnums;
 
     public static function getPrimaryKeySQL(string $tableName): string
     {
@@ -45,13 +52,39 @@ class PostgresSchemaParser
         ";
     }
 
-    public function __construct(
-        private readonly string $tableName,
-        private readonly array $informationSchemaColumns,
-        private readonly array $informationSchemaIndexes,
-        private readonly array $primaryKeys,
-        private readonly array $allEnums,
-    ) {}
+    public function __construct(Connection $connection, string $tableName) {
+        $this->tableName = $tableName;
+        $this->informationSchemaColumns = $connection->executeQuery(
+            sql: PostgresSchemaParser::COLUMNS_SQL,
+            params: ['tableName' => $tableName],
+        )->fetchAllAssociative();
+        $this->informationSchemaIndexes = $connection->executeQuery(
+            sql: PostgresSchemaParser::INDEXES_SQL,
+            params: ['tableName' => $tableName],
+        )->fetchAllAssociative();
+
+        if ($primaryKeySQL = PostgresSchemaParser::getPrimaryKeySQL($tableName)) {
+            $primaryKeys = array_map(
+                fn(array $row): string => $row['column_name'],
+                $connection->executeQuery($primaryKeySQL)->fetchAllAssociative()
+            );
+        } else {
+            $primaryKeys = [];
+        }
+        $this->primaryKeys = $primaryKeys;
+
+        $allEnumsRaw = $connection->executeQuery(PostgresSchemaParser::ALL_ENUMS_SQL)->fetchAllAssociative();
+        $allEnums = [];
+        foreach ($allEnumsRaw as $enumRaw) {
+            $name = $enumRaw['enum_name'];
+            $value = $enumRaw['enum_value'];
+            if (!isset($allEnums[$name])) {
+                $allEnums[$name] = [];
+            }
+            $allEnums[$name][] = $value;
+        }
+        $this->allEnums = $allEnums;
+    }
 
     public function getSchema(): SQLSchema
     {
@@ -181,7 +214,6 @@ class PostgresSchemaParser
                 name: $name,
                 isUnique: $isUnique,
                 columns: $columns,
-                sort: $sort,
             );
         }
         return $result;

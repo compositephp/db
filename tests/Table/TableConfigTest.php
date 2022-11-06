@@ -13,7 +13,7 @@ final class TableConfigTest extends \PHPUnit\Framework\TestCase
     public function test_build(): void
     {
         $class = new
-            #[Attributes\Table(db: 'sqlite', name: 'Foo')]
+            #[Attributes\Table(connection: 'sqlite', name: 'Foo')]
             class extends AbstractEntity {
                 use Traits\SoftDelete;
 
@@ -28,7 +28,7 @@ final class TableConfigTest extends \PHPUnit\Framework\TestCase
         };
         $schema = Schema::build($class::class);
         $tableConfig = TableConfig::fromEntitySchema($schema);
-        $this->assertNotEmpty($tableConfig->dbName);
+        $this->assertNotEmpty($tableConfig->connectionName);
         $this->assertNotEmpty($tableConfig->tableName);
         $this->assertTrue($tableConfig->isSoftDelete);
         $this->assertCount(1, $tableConfig->primaryKeys);

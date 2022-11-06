@@ -5,7 +5,7 @@ namespace Composite\DB\Tests\TestStand\Entities;
 use Composite\DB\Attributes\{PrimaryKey};
 use Composite\DB\Attributes\Table;
 
-#[Table(db: 'sqlite', name: 'TestAutoincrement')]
+#[Table(connection: 'sqlite', name: 'TestAutoincrement')]
 class TestAutoincrementEntity extends \Composite\Entity\AbstractEntity
 {
     #[PrimaryKey(autoIncrement: true)]

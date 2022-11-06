@@ -6,8 +6,7 @@ use Composite\DB\AbstractTable;
 use Composite\DB\TableConfig;
 use Composite\Entity\Columns\AbstractColumn;
 use Composite\DB\Helpers\ClassHelper;
-use Spiral\Reactor\Aggregator\Methods;
-use Spiral\Reactor\Partial\Method;
+use Nette\PhpGenerator\Method;
 
 class TableClassBuilder extends AbstractTableClassBuilder
 {
@@ -19,6 +18,7 @@ class TableClassBuilder extends AbstractTableClassBuilder
     public function generate(): void
     {
         $this->file
+            ->setStrictTypes()
             ->addNamespace(ClassHelper::extractNamespace($this->tableClass))
             ->addUse(AbstractTable::class)
             ->addUse(TableConfig::class)
@@ -28,15 +28,14 @@ class TableClassBuilder extends AbstractTableClassBuilder
             ->setMethods($this->getMethods());
     }
 
-    private function getMethods(): Methods
+    private function getMethods(): array
     {
-        $methods = array_filter([
+        return array_filter([
             $this->generateGetConfig(),
             $this->generateFindOne(),
             $this->generateFindAll(),
             $this->generateCountAll(),
         ]);
-        return new Methods($methods);
     }
 
     protected function generateFindOne(): ?Method
@@ -63,9 +62,7 @@ class TableClassBuilder extends AbstractTableClassBuilder
     {
         return (new Method('findAll'))
             ->setPublic()
-            ->setComment([
-                '@return ' . $this->entityClassShortName . '[]',
-            ])
+            ->setComment('@return ' . $this->entityClassShortName . '[]')
             ->setReturnType('array')
             ->setBody('return $this->createEntities($this->findAllInternal());');
     }

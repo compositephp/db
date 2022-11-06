@@ -27,14 +27,15 @@ class TestAutoincrementSdTable extends TestAutoincrementTable
      */
     public function findAllByName(string $name): array
     {
-        return $this->createEntities($this->findAllInternal([
-            'name' => $name,
-        ]));
+        return $this->createEntities($this->findAllInternal(
+            'name = :name',
+            ['name' => $name]
+        ));
     }
 
     public function init(): bool
     {
-        $this->db->execute(
+        $this->getConnection()->executeStatement(
             "
             CREATE TABLE IF NOT EXISTS {$this->getTableName()}
             (

@@ -9,7 +9,7 @@ use Psr\SimpleCache\InvalidArgumentException;
 
 class CombinedTransaction
 {
-    /** @var \Cycle\Database\DatabaseInterface[] */
+    /** @var \Doctrine\DBAL\Connection[] */
     private array $transactions = [];
     private ?string $lockKey = null;
     private ?CacheInterface $cache = null;
@@ -20,10 +20,11 @@ class CombinedTransaction
     public function save(AbstractTable $table, AbstractEntity &$entity): void
     {
         try {
-            $db = $table->getDb();
-            if (empty($this->transactions[$db->getName()])) {
-                $db->begin();
-                $this->transactions[$db->getName()] = $db;
+            $connectionName = $table->getConnectionName();
+            if (empty($this->transactions[$connectionName])) {
+                $connection = ConnectionManager::getConnection($connectionName);
+                $connection->beginTransaction();
+                $this->transactions[$connectionName] = $connection;
             }
             $table->save($entity);
         } catch (\Throwable $e) {
@@ -38,10 +39,11 @@ class CombinedTransaction
     public function delete(AbstractTable $table, AbstractEntity &$entity): void
     {
         try {
-            $db = $table->getDb();
-            if (empty($this->transactions[$db->getName()])) {
-                $db->begin();
-                $this->transactions[$db->getName()] = $db;
+            $connectionName = $table->getConnectionName();
+            if (empty($this->transactions[$connectionName])) {
+                $connection = ConnectionManager::getConnection($connectionName);
+                $connection->beginTransaction();
+                $this->transactions[$connectionName] = $connection;
             }
             $table->delete($entity);
         } catch (\Throwable $e) {
@@ -52,8 +54,8 @@ class CombinedTransaction
 
     public function rollback(): void
     {
-        foreach ($this->transactions as $db) {
-            $db->rollback();
+        foreach ($this->transactions as $connection) {
+            $connection->rollBack();
         }
         $this->finish();
     }
@@ -63,10 +65,10 @@ class CombinedTransaction
      */
     public function commit(): void
     {
-        foreach ($this->transactions as $db) {
+        foreach ($this->transactions as $connectionName => $connection) {
             try {
-                if (!$db->commit()) {
-                    throw new Exceptions\DbException("Could not commit transaction for database `{$db->getName()}`");
+                if (!$connection->commit()) {
+                    throw new Exceptions\DbException("Could not commit transaction for database `$connectionName`");
                 }
             } catch (\Throwable $e) {
                 $this->rollback();

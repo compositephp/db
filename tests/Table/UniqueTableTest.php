@@ -2,36 +2,36 @@
 
 namespace Composite\DB\Tests\Table;
 
-use Composite\DB\Tests\Table\TestStand\Entities;
-use Composite\DB\Tests\Table\TestStand\Tables;
+use Composite\DB\Tests\TestStand\Entities;
+use Composite\DB\Tests\TestStand\Tables;
 use Composite\DB\Tests\TestStand\Interfaces\IUniqueTable;
 
 final class UniqueTableTest extends BaseTableTest
 {
     public static function setUpBeforeClass(): void
     {
-        (new \Composite\DB\Tests\TestStand\Tables\TestUniqueTable(self::getDatabaseManager()))->init();
-        (new \Composite\DB\Tests\TestStand\Tables\TestUniqueSdTable(self::getDatabaseManager()))->init();
+        (new Tables\TestUniqueTable())->init();
+        (new Tables\TestUniqueSdTable())->init();
     }
 
     public function crud_dataProvider(): array
     {
         return [
             [
-                new \Composite\DB\Tests\TestStand\Tables\TestUniqueTable(self::getDatabaseManager()),
-                \Composite\DB\Tests\TestStand\Entities\TestUniqueEntity::class,
+                new Tables\TestUniqueTable(),
+                Entities\TestUniqueEntity::class,
             ],
             [
-                new \Composite\DB\Tests\TestStand\Tables\TestUniqueSdTable(self::getDatabaseManager()),
-                \Composite\DB\Tests\TestStand\Entities\TestUniqueSdEntity::class,
+                new Tables\TestUniqueSdTable(),
+                Entities\TestUniqueSdEntity::class,
             ],
             [
-                new \Composite\DB\Tests\TestStand\Tables\TestUniqueCachedTable(self::getDatabaseManager(), self::getCache()),
-                \Composite\DB\Tests\TestStand\Entities\TestUniqueEntity::class,
+                new Tables\TestUniqueCachedTable(self::getCache()),
+                Entities\TestUniqueEntity::class,
             ],
             [
-                new \Composite\DB\Tests\TestStand\Tables\TestUniqueSdCachedTable(self::getDatabaseManager(), self::getCache()),
-                \Composite\DB\Tests\TestStand\Entities\TestUniqueSdEntity::class,
+                new Tables\TestUniqueSdCachedTable(self::getCache()),
+                Entities\TestUniqueSdEntity::class,
             ],
         ];
     }
@@ -69,7 +69,7 @@ final class UniqueTableTest extends BaseTableTest
         $this->assertEntityNotExists($table, $newEntity);
     }
 
-    private function assertEntityExists(IUniqueTable $table, \Composite\DB\Tests\TestStand\Entities\TestUniqueEntity $entity): void
+    private function assertEntityExists(IUniqueTable $table, Entities\TestUniqueEntity $entity): void
     {
         $this->assertNotNull($table->findByPk($entity->id));
         $entityFound = array_filter(
@@ -80,7 +80,7 @@ final class UniqueTableTest extends BaseTableTest
         $this->assertEquals(1, $table->countAllByName($entity->name));
     }
 
-    private function assertEntityNotExists(IUniqueTable $table, \Composite\DB\Tests\TestStand\Entities\TestUniqueEntity $entity): void
+    private function assertEntityNotExists(IUniqueTable $table, Entities\TestUniqueEntity $entity): void
     {
         $this->assertNull($table->findByPk($entity->id));
         $entityFound = array_filter(
