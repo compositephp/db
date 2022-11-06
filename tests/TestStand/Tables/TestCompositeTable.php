@@ -5,6 +5,7 @@ namespace Composite\DB\Tests\TestStand\Tables;
 use Composite\DB\TableConfig;
 use Composite\DB\Tests\TestStand\Entities\TestCompositeEntity;
 use Composite\DB\Tests\TestStand\Interfaces\ICompositeTable;
+use Composite\Entity\AbstractEntity;
 
 class TestCompositeTable extends \Composite\DB\AbstractTable implements ICompositeTable
 {
@@ -13,7 +14,7 @@ class TestCompositeTable extends \Composite\DB\AbstractTable implements IComposi
         return TableConfig::fromEntitySchema(TestCompositeEntity::schema());
     }
 
-    public function save(\Composite\Entity\AbstractEntity|TestCompositeEntity &$entity): void
+    public function save(AbstractEntity|TestCompositeEntity &$entity): void
     {
         if ($entity->message === 'Exception') {
             throw new \Exception('Test Exception');
@@ -31,19 +32,34 @@ class TestCompositeTable extends \Composite\DB\AbstractTable implements IComposi
      */
     public function findAllByUser(int $userId): array
     {
-        return $this->createEntities($this->findAllInternal([
-            'user_id' => $userId,
-        ]));
+        return $this->createEntities($this->findAllInternal(
+            'user_id = :user_id',
+            ['user_id' => $userId],
+        ));
     }
 
     public function countAllByUser(int $userId): int
     {
-        return $this->countAllInternal(['user_id' => $userId]);
+        return $this->countAllInternal(
+            'user_id = :user_id',
+            ['user_id' => $userId],
+        );
+    }
+
+    public function test(): array
+    {
+        $rows = $this
+            ->select()
+            ->where()
+            ->orWhere()
+            ->orderBy()
+            ->fetchAllAssociative();
+        return $this->createEntities($rows);
     }
 
     public function init(): bool
     {
-        $this->db->execute(
+        $this->getConnection()->executeStatement(
             "
             CREATE TABLE IF NOT EXISTS {$this->getTableName()}
             (
@@ -60,6 +76,6 @@ class TestCompositeTable extends \Composite\DB\AbstractTable implements IComposi
 
     public function truncate(): void
     {
-        $this->db->execute("DELETE FROM {$this->getTableName()} WHERE 1");
+        $this->getConnection()->executeStatement("DELETE FROM {$this->getTableName()} WHERE 1");
     }
 }

@@ -5,7 +5,7 @@ namespace Composite\DB\Tests\TestStand\Entities;
 use Composite\DB\Attributes\{PrimaryKey, Table};
 use Composite\Entity\AbstractEntity;
 
-#[Table(db: 'sqlite', name: 'TestComposite')]
+#[Table(connection: 'sqlite', name: 'TestComposite')]
 class TestCompositeEntity extends AbstractEntity
 {
     public function __construct(

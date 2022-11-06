@@ -54,14 +54,18 @@ class PostsTable extends AbstractCachedTable
     */
     public function findAllFeatured(): array
     {
-        return $this->createEntities($this->findAllInternal([
-            'is_featured' => true,
-        ]));
+        return $this->createEntities($this->findAllInternal(
+            'is_featured = :is_featured',
+            ['is_featured' => true],
+        ));
     }
     
     public function countAllFeatured(): int
     {
-        return $this->countAllCachedInternal(['is_featured' => true]);
+        return $this->countAllCachedInternal(
+            'is_featured = :is_featured',
+            ['is_featured' => true],
+        );
     }
     
     public getFlushCacheKeys(AbstractEntity|Post $entity): array
@@ -70,8 +74,14 @@ class PostsTable extends AbstractCachedTable
         // its better to check that changed post is featured or it was
         if ($entity->is_featured || $entity->getOldValue('is_featured') === true) {
             return [
-                $this->getListCacheKey(['is_featured' => true]),
-                $this->getCountCacheKey(['is_featured' => true]),
+                $this->getListCacheKey(
+                    'is_featured = :is_featured',
+                    ['is_featured' => true],
+                ),
+                $this->getCountCacheKey(
+                    'is_featured = :is_featured',
+                    ['is_featured' => true],
+                ),
             ];        
         }
         return [];

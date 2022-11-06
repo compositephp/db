@@ -5,27 +5,34 @@ namespace Composite\DB;
 use Composite\Entity\AbstractEntity;
 use Composite\DB\Exceptions\DbException;
 use Composite\Entity\Exceptions\EntityException;
-use Cycle\Database\DatabaseInterface;
-use Cycle\Database\DatabaseProviderInterface;
-use Cycle\Database\Query\SelectQuery;
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Query\QueryBuilder;
 
 abstract class AbstractTable
 {
     protected readonly TableConfig $config;
-    protected DatabaseInterface $db;
-    private ?SelectQuery $selectQuery = null;
+    private ?QueryBuilder $selectQuery = null;
 
     abstract protected function getConfig(): TableConfig;
 
-    public function __construct(DatabaseProviderInterface $databaseProvider)
+    public function __construct()
     {
         $this->config = $this->getConfig();
-        $this->db = $databaseProvider->database($this->config->dbName);
     }
 
-    public function getDb(): DatabaseInterface
+    public function getTableName(): string
     {
-        return $this->db;
+        return $this->config->tableName;
+    }
+
+    protected function getConnection(): Connection
+    {
+        return ConnectionManager::getConnection($this->config->connectionName);
+    }
+
+    public function getConnectionName(): string
+    {
+        return $this->config->connectionName;
     }
 
     /**
@@ -37,14 +44,12 @@ abstract class AbstractTable
     {
         $this->config->checkEntity($entity);
         if ($entity->isNew()) {
+            $connection = $this->getConnection();
             $insertData = $entity->toArray();
-            $returnedValue = $this->db
-                ->insert($this->getTableName())
-                ->values($insertData)
-                ->run();
+            $this->getConnection()->insert($this->getTableName(), $insertData);
 
-            if ($returnedValue && ($autoIncrementKey = $this->config->autoIncrementKey)) {
-                $insertData[$autoIncrementKey] = intval($returnedValue);
+            if ($this->config->autoIncrementKey) {
+                $insertData[$this->config->autoIncrementKey] = intval($connection->lastInsertId());
                 $entity = $entity::fromArray($insertData);
             } else {
                 $entity->resetChangedColumns();
@@ -53,32 +58,38 @@ abstract class AbstractTable
             if (!$changedColumns = $entity->getChangedColumns()) {
                 return;
             }
+            $connection = $this->getConnection();
             $where = $this->getPkCondition($entity);
             $this->enrichCondition($where);
 
             if ($this->config->isOptimisticLock && isset($entity->version)) {
                 $currentVersion = $entity->version;
-                $this->transaction(function () use ($changedColumns, $where, $entity, $currentVersion) {
-                    $this->db->update(
+                try {
+                    $connection->beginTransaction();
+                    $connection->update(
                         $this->getTableName(),
                         $changedColumns,
                         $where
-                    )->run();
-                    $versionUpdated = $this->db->update(
+                    );
+                    $versionUpdated = $connection->update(
                         $this->getTableName(),
                         ['version' => $currentVersion + 1],
                         $where + ['version' => $currentVersion]
-                    )->run();
+                    );
                     if (!$versionUpdated) {
                         throw new DbException('Failed to update entity version, concurrency modification, rolling back.');
                     }
-                });
+                    $connection->commit();
+                } catch (\Throwable $e) {
+                    $connection->rollBack();
+                    throw $e;
+                }
             } else {
-                $this->db->update(
+                $connection->update(
                     $this->getTableName(),
                     $changedColumns,
                     $where
-                )->run();
+                );
             }
             $entity->resetChangedColumns();
         }
@@ -91,7 +102,7 @@ abstract class AbstractTable
      */
     public function saveMany(array $entities): array
     {
-        return $this->transaction(function() use ($entities) {
+        return $this->getConnection()->transactional(function() use ($entities) {
             foreach ($entities as $entity) {
                 $this->save($entity);
             }
@@ -111,7 +122,9 @@ abstract class AbstractTable
                 $this->save($entity);
             }
         } else {
-            $this->db->delete($this->getTableName(), $this->getPkCondition($entity))->run();
+            $where = $this->getPkCondition($entity);
+            $this->enrichCondition($where);
+            $this->getConnection()->delete($this->getTableName(), $where);
         }
     }
 
@@ -120,7 +133,7 @@ abstract class AbstractTable
      */
     public function deleteMany(array $entities): bool
     {
-        return $this->transaction(function() use ($entities) {
+        return $this->getConnection()->transactional(function() use ($entities) {
             foreach ($entities as $entity) {
                 $this->delete($entity);
             }
@@ -128,18 +141,17 @@ abstract class AbstractTable
         });
     }
 
-    protected function countAllInternal(array $where = []): int
+    protected function countAllInternal(string $whereString = '', array $whereParams = []): int
     {
-        $this->enrichCondition($where);
-        return $this->select()->where($where)->count();
-    }
-
-    /**
-     * @throws \Throwable
-     */
-    public function transaction(callable $callback, ?string $isolationLevel = null): mixed
-    {
-        return $this->db->transaction($callback, $isolationLevel);
+        $query = $this->select('COUNT(*)');
+        if ($whereString) {
+            $query->where($whereString);
+            foreach ($whereParams as $param => $value) {
+                $query->setParameter($param, $value);
+            }
+        }
+        $this->enrichCondition($query);
+        return intval($query->executeQuery()->fetchOne());
     }
 
     protected function findByPkInternal(mixed $pk): ?array
@@ -150,31 +162,45 @@ abstract class AbstractTable
 
     protected function findOneInternal(array $where): ?array
     {
+        $query = $this->select();
         $this->enrichCondition($where);
-        $query = $this->select()->where($where);
-        return $query->run()->fetch() ?: null;
+        $this->buildWhere($query, $where);
+        return $query->fetchAssociative() ?: null;
     }
 
-    protected function findAllInternal(array $where = [], array|string $orderBy = [], ?int $limit = null, ?int $offset = null): array
+    protected function findAllInternal(
+        string $whereString = '',
+        array $whereParams = [],
+        array|string $orderBy = [],
+        ?int $limit = null,
+        ?int $offset = null,
+    ): array
     {
-        $this->enrichCondition($where);
-        return $this
-            ->select()
-            ->where($where)
-            ->orderBy($orderBy)
-            ->limit($limit)
-            ->offset($offset)
-            ->fetchAll();
-    }
+        $query = $this->select();
+        if ($whereString) {
+            $query->where($whereString);
+            foreach ($whereParams as $param => $value) {
+                $query->setParameter($param, $value);
+            }
+        }
+        $this->enrichCondition($query);
 
-    public function getTableName(): string
-    {
-        return $this->config->tableName;
-    }
-
-    public function getDatabaseName(): string
-    {
-        return $this->config->dbName;
+        if ($orderBy) {
+            if (is_array($orderBy)) {
+                foreach ($orderBy as $column => $direction) {
+                    $query->addOrderBy($column, $direction);
+                }
+            } else {
+                $query->orderBy($orderBy);
+            }
+        }
+        if ($limit > 0) {
+            $query->setMaxResults($limit);
+        }
+        if ($offset > 0) {
+            $query->setFirstResult($offset);
+        }
+        return $query->executeQuery()->fetchAllAssociative();
     }
 
     final protected function createEntity(mixed $data): mixed
@@ -230,18 +256,36 @@ abstract class AbstractTable
         return $condition;
     }
 
-    protected function enrichCondition(array &$condition): void
+    protected function enrichCondition(array|QueryBuilder &$query): void
     {
-        if ($this->config->isSoftDelete && !isset($condition['deleted_at'])) {
-            $condition['deleted_at'] = null;
+        if ($this->config->isSoftDelete) {
+            if ($query instanceof QueryBuilder) {
+                $query->andWhere('deleted_at IS NULL');
+            } else {
+                if (!isset($query['deleted_at'])) {
+                    $query['deleted_at'] = null;
+                }
+            }
         }
     }
 
-    protected function select(): SelectQuery
+    protected function select(string $select = '*'): QueryBuilder
     {
         if ($this->selectQuery === null) {
-            $this->selectQuery = $this->db->select()->from($this->getTableName());
+            $this->selectQuery = $this->getConnection()->createQueryBuilder()->from($this->getTableName());
         }
-        return clone $this->selectQuery;
+        return (clone $this->selectQuery)->select($select);
+    }
+
+    private function buildWhere(QueryBuilder $query, array $where): void
+    {
+        foreach ($where as $column => $value) {
+            if ($value === null) {
+                $query->andWhere("$column IS NULL");
+            } else {
+                $query->andWhere("$column = :" . $column);
+                $query->setParameter($column, $value);
+            }
+        }
     }
 }

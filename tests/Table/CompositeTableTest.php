@@ -2,36 +2,36 @@
 
 namespace Composite\DB\Tests\Table;
 
-use Composite\DB\Tests\Table\TestStand\Entities;
-use Composite\DB\Tests\Table\TestStand\Tables;
+use Composite\DB\Tests\TestStand\Tables;
+use Composite\DB\Tests\TestStand\Entities;
 use Composite\DB\Tests\TestStand\Interfaces\ICompositeTable;
 
 final class CompositeTableTest extends BaseTableTest
 {
     public static function setUpBeforeClass(): void
     {
-        (new \Composite\DB\Tests\TestStand\Tables\TestCompositeTable(self::getDatabaseManager()))->init();
-        (new \Composite\DB\Tests\TestStand\Tables\TestCompositeSdTable(self::getDatabaseManager()))->init();
+        (new Tables\TestCompositeTable())->init();
+        (new Tables\TestCompositeSdTable())->init();
     }
 
     public function crud_dataProvider(): array
     {
         return [
             [
-                new \Composite\DB\Tests\TestStand\Tables\TestCompositeTable(self::getDatabaseManager()),
-                \Composite\DB\Tests\TestStand\Entities\TestCompositeEntity::class,
+                new Tables\TestCompositeTable(),
+                Entities\TestCompositeEntity::class,
             ],
             [
-                new \Composite\DB\Tests\TestStand\Tables\TestCompositeSdTable(self::getDatabaseManager()),
-                \Composite\DB\Tests\TestStand\Entities\TestCompositeSdEntity::class,
+                new Tables\TestCompositeSdTable(),
+                Entities\TestCompositeSdEntity::class,
             ],
             [
-                new \Composite\DB\Tests\TestStand\Tables\TestCompositeCachedTable(self::getDatabaseManager(), self::getCache()),
-                \Composite\DB\Tests\TestStand\Entities\TestCompositeEntity::class,
+                new Tables\TestCompositeCachedTable(self::getCache()),
+                Entities\TestCompositeEntity::class,
             ],
             [
-                new \Composite\DB\Tests\TestStand\Tables\TestCompositeSdCachedTable(self::getDatabaseManager(), self::getCache()),
-                \Composite\DB\Tests\TestStand\Entities\TestCompositeSdEntity::class,
+                new Tables\TestCompositeSdCachedTable(self::getCache()),
+                Entities\TestCompositeSdEntity::class,
             ],
         ];
     }
@@ -68,7 +68,7 @@ final class CompositeTableTest extends BaseTableTest
         $this->assertEntityExists($table, $newEntity);
     }
 
-    private function assertEntityExists(ICompositeTable $table, \Composite\DB\Tests\TestStand\Entities\TestCompositeEntity $entity): void
+    private function assertEntityExists(ICompositeTable $table, Entities\TestCompositeEntity $entity): void
     {
         $this->assertNotNull($table->findOne(user_id: $entity->user_id, post_id: $entity->post_id));
         $entityFound = array_filter(
@@ -79,7 +79,7 @@ final class CompositeTableTest extends BaseTableTest
         $this->assertEquals(1, $table->countAllByUser($entity->user_id));
     }
 
-    private function assertEntityNotExists(ICompositeTable $table, \Composite\DB\Tests\TestStand\Entities\TestCompositeEntity $entity): void
+    private function assertEntityNotExists(ICompositeTable $table, Entities\TestCompositeEntity $entity): void
     {
         $this->assertNull($table->findOne(user_id: $entity->user_id, post_id: $entity->post_id));
         $entityFound = array_filter(

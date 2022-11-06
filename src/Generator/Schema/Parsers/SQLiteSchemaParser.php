@@ -7,6 +7,7 @@ use Composite\DB\Generator\Schema\SQLColumn;
 use Composite\DB\Generator\Schema\SQLEnum;
 use Composite\DB\Generator\Schema\SQLIndex;
 use Composite\DB\Generator\Schema\SQLSchema;
+use Doctrine\DBAL\Connection;
 
 class SQLiteSchemaParser
 {
@@ -19,10 +20,22 @@ class SQLiteSchemaParser
     private const PRIMARY_KEY_PATTERN = '/^primary key \(([\w\s,\'\"`]+)\)/i';
     private const ENUM_PATTERN = '/check \((?:`|\"|\')?(\w+)(?:`|\"|\')? in \((.+)\)\)/i';
 
+    private readonly string $tableSql;
+    private readonly array $indexesSql;
+
     public function __construct(
-        private readonly string $tableSql,
-        private readonly array $indexesSql,
-    ) {}
+        Connection $connection,
+        string $tableName,
+    ) {
+        $this->tableSql = $connection->executeQuery(
+            sql: self::TABLE_SQL,
+            params: ['tableName' => $tableName],
+        )->fetchOne();
+        $this->indexesSql = $connection->executeQuery(
+            sql: self::INDEXES_SQL,
+            params: ['tableName' => $tableName],
+        )->fetchFirstColumn();
+    }
 
     public function getSchema(): SQLSchema
     {
@@ -195,9 +208,10 @@ class SQLiteSchemaParser
     {
         $result = [];
         foreach ($this->indexesSql as $indexSql) {
+            if (!$indexSql) continue;
             $indexSql = trim(str_replace("\n", " ", $indexSql));
             $indexSql = preg_replace("/\s+/", " ", $indexSql);
-            if (!preg_match('/index(?:\s+)(?:`|\"|\')?(\w+)(?:`|\"|\')?/i', $indexSql, $nameMatch)) {
+            if (!preg_match('/index\s+(?:`|\"|\')?(\w+)(?:`|\"|\')?/i', $indexSql, $nameMatch)) {
                 continue;
             }
             $name = $nameMatch[1];

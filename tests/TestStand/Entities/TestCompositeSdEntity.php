@@ -5,7 +5,7 @@ namespace Composite\DB\Tests\TestStand\Entities;
 use Composite\DB\Attributes\Table;
 use Composite\DB\Traits\SoftDelete;
 
-#[Table(db: 'sqlite', name: 'TestCompositeSoftDelete')]
+#[Table(connection: 'sqlite', name: 'TestCompositeSoftDelete')]
 class TestCompositeSdEntity extends TestCompositeEntity
 {
     use SoftDelete;

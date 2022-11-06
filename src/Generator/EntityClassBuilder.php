@@ -21,7 +21,7 @@ class EntityClassBuilder
 
     public function __construct(
         private readonly SQLSchema $schema,
-        private readonly string $dbName,
+        private readonly string $connectionName,
         private readonly string $entityClass,
         private readonly array $enums,
     ) {}
@@ -59,7 +59,7 @@ class EntityClassBuilder
 
         return [
             'phpOpener' => '<?php declare(strict_types=1);',
-            'dbName' => $this->dbName,
+            'connectionName' => $this->connectionName,
             'tableName' => $this->schema->tableName,
             'pkNames' => "'" . implode("', '", $this->schema->primaryKeys) . "'",
             'indexes' => $this->getIndexes(),

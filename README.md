@@ -30,8 +30,8 @@ just use native php class syntax.
 
 It also has many popular features such as:
 
-* **Query Builder** - build your queries with constructor, based on [cycle/database](https://github.com/cycle/database)
-* **Migrations** - based on [cycle/migrations](https://github.com/cycle/migrations)
+* **Query Builder** - build your queries with constructor, based on [doctrine/dbal](https://github.com/doctrine/dbal)
+* **Migrations** - based on [doctrine/migrations](https://github.com/doctrine/migrations)
 
 But there is 1 sacrifice for all these features - there is no support for relations in Composite DB. Its too much
 uncontrollable magic and hidden bottlenecks with "JOINs" and its not possible to implement automatic caching with
@@ -54,11 +54,10 @@ relations. We recommend to have full control and make several cached select quer
     ```shell
     $ composer require compositephp/db
     ```
-2. Configure DatabaseManager from [cycle/database](https://github.com/cycle/database) package
-3. (Optional) Configure [symfony/console](https://symfony.com/doc/current/components/console.html#creating-a-console-application) commands to use automatic class generators
+2. Configure `Composite\DB\ConnectionManager` ([example](./doc/configuration.md#configure-connectionmanager))
+3. (Optional) Configure [symfony/console](https://symfony.com/doc/current/components/console.html#creating-a-console-application) 
+commands to use automatic class generators ([example](./doc/configuration.md#configure-console-commands))
 4. (Optional) Install and configure any PSR-16 (simple cache) package to use automatic caching
-
-Full configuration working example can be found [here](./doc/configuration.md).
 
 ## Quick example
 Imagine you have simple table `Users`
@@ -120,7 +119,7 @@ $ php console.php composite-db:generate-table 'App\User' 'App\UsersTable'
 And that's it, now you have CRUD for your SQL table and simple selects:
 
 ```php
-$table = new UsersTable(...);
+$table = new UsersTable();
 
 //Create
 $user = new User(

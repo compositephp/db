@@ -13,7 +13,7 @@ final class PrimaryKeyAttributeTest extends \PHPUnit\Framework\TestCase
         return [
             [
                 'entity' => new
-                #[Attributes\Table(db: 'sqlite', name: 'Foo')]
+                #[Attributes\Table(connection: 'sqlite', name: 'Foo')]
                 class extends AbstractEntity {
                     #[Attributes\PrimaryKey(autoIncrement: true)]
                     public readonly int $id;

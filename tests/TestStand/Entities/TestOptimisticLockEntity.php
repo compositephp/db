@@ -7,7 +7,7 @@ use Composite\DB\Attributes\Table;
 use Composite\DB\Traits;
 use Composite\Entity\AbstractEntity;
 
-#[Table(db: 'sqlite', name: 'TestOptimisticLock')]
+#[Table(connection: 'sqlite', name: 'TestOptimisticLock')]
 class TestOptimisticLockEntity extends AbstractEntity
 {
     use Traits\OptimisticLock;

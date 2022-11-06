@@ -17,8 +17,8 @@ class TestCompositeCachedTable extends \Composite\DB\AbstractCachedTable impleme
     protected function getFlushCacheKeys(TestCompositeEntity|AbstractEntity $entity): array
     {
         return [
-            $this->getListCacheKey(['user_id' => $entity->user_id]),
-            $this->getCountCacheKey(['user_id' => $entity->user_id]),
+            $this->getListCacheKey('user_id = :user_id', ['user_id' => $entity->user_id]),
+            $this->getCountCacheKey('user_id = :user_id', ['user_id' => $entity->user_id]),
         ];
     }
 
@@ -37,17 +37,23 @@ class TestCompositeCachedTable extends \Composite\DB\AbstractCachedTable impleme
     {
         return array_map(
             fn (array $data) => TestCompositeEntity::fromArray($data),
-            $this->findAllCachedInternal(['user_id' => $userId])
+            $this->findAllCachedInternal(
+                'user_id = :user_id',
+                ['user_id' => $userId],
+            )
         );
     }
 
     public function countAllByUser(int $userId): int
     {
-        return $this->countAllCachedInternal(['user_id' => $userId]);
+        return $this->countAllCachedInternal(
+            'user_id = :user_id',
+            ['user_id' => $userId],
+        );
     }
 
     public function truncate(): void
     {
-        $this->db->execute("DELETE FROM {$this->getTableName()} WHERE 1");
+        $this->getConnection()->executeStatement("DELETE FROM {$this->getTableName()} WHERE 1");
     }
 }

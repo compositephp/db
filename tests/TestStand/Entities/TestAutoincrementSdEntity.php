@@ -6,7 +6,7 @@ use Composite\DB\Attributes\{PrimaryKey};
 use Composite\DB\Attributes\Table;
 use Composite\DB\Traits\SoftDelete;
 
-#[Table(db: 'sqlite', name: 'TestAutoIncrementSoftDelete')]
+#[Table(connection: 'sqlite', name: 'TestAutoIncrementSoftDelete')]
 class TestAutoincrementSdEntity extends TestAutoincrementEntity
 {
     use SoftDelete;

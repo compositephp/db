@@ -2,8 +2,6 @@
 
 namespace Composite\DB\Generator\Schema;
 
-use Composite\DB\Migrations\Config;
-
 class SQLIndex
 {
     public function __construct(

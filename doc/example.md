@@ -8,13 +8,12 @@ All you need is [pdo_sqlite](https://www.php.net/manual/en/ref.pdo-sqlite.php) e
 <?php declare(strict_types=1);
 include 'vendor/autoload.php';
 
+use Composite\DB\ConnectionManager;
 use Composite\Entity\AbstractEntity;
 use Composite\DB\Attributes\{Table, PrimaryKey};
 use Composite\DB\TableConfig;
-use Cycle\Database\Config;
-use Cycle\Database\DatabaseManager;
 
-#[Table(db: 'sqlite', name: 'Users')]
+#[Table(connection: 'sqlite', name: 'Users')]
 class User extends AbstractEntity
 {
     #[PrimaryKey(autoIncrement: true)]
@@ -52,48 +51,47 @@ class UsersTable extends \Composite\DB\AbstractTable
      */
     public function findAllActive(): array
     {
-        return $this->createEntities($this->findAllInternal([
-            'status' => Status::ACTIVE->name,
-        ]));
+        return $this->createEntities($this->findAllInternal(
+            'status = :status',
+            ['status' => Status::ACTIVE->name],
+        ));
     }
 
     public function countAllActive(): int
     {
-        return $this->countAllInternal([
-            'status' => Status::ACTIVE->name,
-        ]);
+        return $this->countAllInternal(
+            'status = :status',
+            ['status' => Status::ACTIVE->name],
+        );
+    }
+
+    public function init(): void
+    {
+        $this->getConnection()->executeStatement("
+            CREATE TABLE IF NOT EXISTS Users
+            (
+                `id`         INTEGER
+                    CONSTRAINT Users_pk PRIMARY KEY AUTOINCREMENT,
+                `email`      VARCHAR(255)                           NOT NULL,
+                `name`       VARCHAR(255) DEFAULT NULL,
+                `is_test`    INT          DEFAULT 0                 NOT NULL,
+                `status`     ENUM         DEFAULT 'ACTIVE'          NOT NULL,
+                `created_at` TIMESTAMP    DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                check (\"status\" IN ('ACTIVE', 'BLOCKED'))
+            );
+        ");
     }
 }
 
-$databaseManager = new DatabaseManager(new Config\DatabaseConfig([
-    'databases' => [
-        'sqlite' => ['connection' => 'sqlite-connection'],
+ConnectionManager::configure([
+    'sqlite' => [
+        'driver' => 'pdo_sqlite',
+        'path' => __DIR__ . '/database.db'
     ],
-    'connections' => [
-        'sqlite-connection' => new Config\SQLiteDriverConfig(
-            connection: new Config\SQLite\FileConnectionConfig(
-                database: __DIR__ . '/database.db'
-            ),
-        ),
-    ],
-]));
-$table = new UsersTable($databaseManager);
+]);
 
-$table->getDb()->query(
-    <<< SQL
-    CREATE TABLE IF NOT EXISTS Users
-    (
-        `id`         INTEGER
-            CONSTRAINT Users_pk PRIMARY KEY AUTOINCREMENT,
-        `email`      VARCHAR(255)                           NOT NULL,
-        `name`       VARCHAR(255) DEFAULT NULL,
-        `is_test`    INT          DEFAULT 0                 NOT NULL,
-        `status`     ENUM         DEFAULT 'ACTIVE'          NOT NULL,
-        `created_at` TIMESTAMP    DEFAULT CURRENT_TIMESTAMP NOT NULL,
-        check ("status" IN ('ACTIVE', 'BLOCKED'))
-    );
-SQL
-);
+$table = new UsersTable();
+$table->init();
 
 //Create
 $user = new User(

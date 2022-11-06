@@ -9,7 +9,7 @@ use Composite\DB\Tests\TestStand\Entities\Enums\TestSubEntity;
 use Composite\DB\Tests\TestStand\Entities\Enums\TestUnitEnum;
 use Composite\Entity\AbstractEntity;
 
-#[Attributes\Table(db: 'sqlite', name: 'Test')]
+#[Attributes\Table(connection: 'sqlite', name: 'Test')]
 class TestEntity extends AbstractEntity
 {
     public function __construct(

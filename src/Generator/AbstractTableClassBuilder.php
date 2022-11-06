@@ -7,12 +7,12 @@ use Composite\DB\TableConfig;
 use Composite\Entity\Columns\AbstractColumn;
 use Composite\Entity\Schema;
 use Doctrine\Inflector\Rules\English\InflectorFactory;
-use Spiral\Reactor\FileDeclaration;
-use Spiral\Reactor\Partial\Method;
+use Nette\PhpGenerator\Method;
+use Nette\PhpGenerator\PhpFile;
 
 abstract class AbstractTableClassBuilder
 {
-    protected readonly FileDeclaration $file;
+    protected readonly PhpFile $file;
     protected readonly string $entityClassShortName;
 
     public function __construct(
@@ -22,15 +22,15 @@ abstract class AbstractTableClassBuilder
     )
     {
         $this->entityClassShortName = ClassHelper::extractShortName($this->schema->class);
-        $this->file = new FileDeclaration();
+        $this->file = new PhpFile();
     }
 
     abstract public function getParentNamespace(): string;
     abstract public function generate(): void;
 
-    final public function getFile(): FileDeclaration
+    final public function getFileContent(): string
     {
-        return $this->file;
+        return (string)$this->file;
     }
 
     protected function generateGetConfig(): Method
@@ -48,7 +48,7 @@ abstract class AbstractTableClassBuilder
             return '$' . $var;
         }
         $vars = array_map(
-            fn ($var) => "'$var' => \$" . (new InflectorFactory())->build()->camelize($var),
+            fn ($var) => "'$var' => \$" . $var,
             $vars
         );
         return '[' . implode(', ', $vars) . ']';

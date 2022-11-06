@@ -18,8 +18,8 @@ class TestUniqueSdCachedTable extends AbstractCachedTable implements IUniqueTabl
     protected function getFlushCacheKeys(TestUniqueSdEntity|AbstractEntity $entity): array
     {
         return [
-            $this->getListCacheKey(['name' => $entity->name]),
-            $this->getCountCacheKey(['name' => $entity->name]),
+            $this->getListCacheKey('name = :name', ['name' => $entity->name]),
+            $this->getCountCacheKey('name = :name', ['name' => $entity->name]),
         ];
     }
 
@@ -33,18 +33,22 @@ class TestUniqueSdCachedTable extends AbstractCachedTable implements IUniqueTabl
      */
     public function findAllByName(string $name): array
     {
-        return $this->createEntities($this->findAllCachedInternal([
-            'name' => $name,
-        ]));
+        return $this->createEntities($this->findAllCachedInternal(
+            'name = :name',
+            ['name' => $name],
+        ));
     }
 
     public function countAllByName(string $name): int
     {
-        return $this->countAllCachedInternal(['name' => $name]);
+        return $this->countAllCachedInternal(
+            'name = :name',
+            ['name' => $name],
+        );
     }
 
     public function truncate(): void
     {
-        $this->db->execute("DELETE FROM {$this->getTableName()} WHERE 1");
+        $this->getConnection()->executeStatement("DELETE FROM {$this->getTableName()} WHERE 1");
     }
 }

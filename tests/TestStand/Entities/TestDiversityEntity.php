@@ -11,7 +11,7 @@ use Composite\DB\Tests\TestStand\Entities\Enums\TestUnitEnum;
 use Composite\DB\Attributes;
 use Composite\Entity\AbstractEntity;
 
-#[Attributes\Table(db: 'sqlite', name: 'Diversity')]
+#[Attributes\Table(connection: 'sqlite', name: 'Diversity')]
 class TestDiversityEntity extends AbstractEntity
 {
     #[Attributes\PrimaryKey(autoIncrement: true)]

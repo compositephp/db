@@ -20,7 +20,7 @@ class TestOptimisticLockTable extends AbstractTable
 
     public function init(): bool
     {
-        $this->db->execute(
+        $this->getConnection()->executeStatement(
             "
             CREATE TABLE IF NOT EXISTS {$this->getTableName()}
             (

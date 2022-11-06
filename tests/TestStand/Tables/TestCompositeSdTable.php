@@ -25,20 +25,23 @@ class TestCompositeSdTable extends TestCompositeTable
      */
     public function findAllByUser(int $userId): array
     {
-        return array_map(
-            fn (array $data) => TestCompositeSdEntity::fromArray($data),
-            $this->findAllInternal(['user_id' => $userId])
-        );
+        return $this->createEntities($this->findAllInternal(
+            'user_id = :user_id',
+            ['user_id' => $userId],
+        ));
     }
 
     public function countAllByUser(int $userId): int
     {
-        return $this->countAllInternal(['user_id' => $userId]);
+        return $this->countAllInternal(
+            'user_id = :user_id',
+            ['user_id' => $userId],
+        );
     }
 
     public function init(): bool
     {
-        $this->db->execute(
+        $this->getConnection()->executeStatement(
             "
             CREATE TABLE IF NOT EXISTS {$this->getTableName()}
             (

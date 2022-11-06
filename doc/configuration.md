@@ -1,41 +1,47 @@
 # Configuration
 
 Overview:
-* [Configure DatabaseManager](#configure-databasemanager)
+* [Configure ConnectionManager](#configure-connectionmanager)
 * [Configure console commands](#configure-console-commands)
 * [Configure code generators](#code-generators)
-* [Configure migrations](#migrations)
 
 
-## Configure DatabaseManager
+## Configure ConnectionManager
 
-Every [Table class](table.md) requires `DatabaseManager` instance to be passed in their constructor. 
-For detailed information please visit [official cycle/database documentation](https://cycle-orm.dev/docs/database-connect/2.x/en). 
+ConnectionManager must be configured before using the table classes and code generators.
 
-Example:
-```php
-<?php
+1. Create file which returns named connection params, format from 
+[doctrine DBAL](https://www.doctrine-project.org/projects/doctrine-dbal/en/latest/reference/configuration.html#configuration):
 
-use Cycle\Database\Config;
-use Cycle\Database\DatabaseManager;
-
-$dbManager = new DatabaseManager(new Config\DatabaseConfig([
-    'databases' => [
-        'mysql' => ['connection' => 'mysql'],
-    ],
-    'connections' => [
-        'mysql' => new Config\MySQLDriverConfig(
-            new Config\MySQL\TcpConnectionConfig(
-                database: 'dbName',
-                host: 'localhost',
-                port: 3306,
-                user: 'username',
-                password: 'password',
-            ),
-        ),
-    ],
-]));
-```
+   ```php
+   <?php declare(strict_types=1);
+   return [
+        'sqlite' => [
+            'driver' => 'pdo_sqlite',
+            'path' => __DIR__ . '/tests/runtime/sqlite/database.db',
+        ],
+        'mysql' => [
+            'driver' => 'pdo_mysql',
+            'dbname' => 'test',
+            'user' => 'test',
+            'password' => 'test',
+            'host' => '127.0.0.1',
+        ],
+        'postgres' => [
+            'driver' => 'pdo_pgsql',
+            'dbname' => 'test',
+            'user' => 'test',
+            'password' => 'test',
+            'host' => '127.0.0.1',
+        ],
+   ];
+   ```
+2. Setup `CONNECTIONS_CONFIG_FILE` environment variable with path to  your config file:
+   * Use [vlucas/phpdotenv](https://github.com/vlucas/phpdotenv) package and `.env` file
+   * Or simply call: 
+     ```php 
+     putenv('CONNECTIONS_CONFIG_FILE=/path/to/config/file.php')
+     ```
 
 ## Configure console commands
 
@@ -51,51 +57,13 @@ Composite DB has next code generators:
 ```php
 <?php
 
-use Cycle\Database\DatabaseManager;
 use Composite\DB\Commands;
 use Symfony\Component\Console\Application;
 
-$dbManager = new DatabaseManager(...); // see example above
-
 $app = new Application();
 $app->addCommands([
-    new Commands\GenerateEntityCommand($dbManager), //to initialize $dbManager see example above
+    new Commands\GenerateEntityCommand(), //to initialize $dbManager see example above
     new Commands\GenerateTableCommand(),
-]);
-$app->run();
-```
-
-### Migrations
-
-Composite DB uses `cycle/migrations` component for migrations. For more information please visit [official cycle/migrations documentation](https://cycle-orm.dev/docs/database-migrations/2.x/en).
-
-```php
-<?php
-
-use Cycle\Database\DatabaseManager;
-use Cycle\Migrations\Config\MigrationConfig;
-use Composite\DB\Commands;
-use Spiral\Tokenizer;
-use Symfony\Component\Console\Application;
-
-$dbManager = new DatabaseManager(...); // see example above
-
-$migrationConfig = new MigrationConfig([
-    'directory' => '/path/to/your/migrations', // where to store migrations
-    'table'     => '__migrations',             // database table to store migration status
-    'safe'      => true                        // When set to true no confirmation will be requested on migration run.
-]);
-$tokenizer = new Tokenizer\Tokenizer(
-    new Tokenizer\Config\TokenizerConfig([
-        'directories' => [
-            '/path/to/your/source/code1', // directories which should be scanned
-            '/path/to/your/source/code2', // to find all Entity classes and generate migrations
-        ],  
-    ])
-);
-$app = new Application();
-$app->addCommands([
-    new Commands\MigrateCommand($dbManager, $migrationConfig, $tokenizer),
 ]);
 $app->run();
 ```

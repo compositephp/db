@@ -6,7 +6,7 @@ use Composite\DB\Attributes\{PrimaryKey};
 use Composite\DB\Attributes\Table;
 use Composite\Entity\AbstractEntity;
 
-#[Table(db: 'sqlite', name: 'TestUnique')]
+#[Table(connection: 'sqlite', name: 'TestUnique')]
 class TestUniqueEntity extends AbstractEntity
 {
     public function __construct(
