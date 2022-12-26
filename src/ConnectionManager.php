@@ -40,7 +40,7 @@ class ConnectionManager
     private static function getConnectionParams(string $name): array
     {
         if (self::$configs === null) {
-            $configFile = getenv(self::CONNECTIONS_CONFIG_ENV_VAR, true);
+            $configFile = getenv(self::CONNECTIONS_CONFIG_ENV_VAR, true) ?: ($_ENV[self::CONNECTIONS_CONFIG_ENV_VAR] ?? false);
             if (empty($configFile)) {
                 throw new DbException(sprintf(
                     'ConnectionManager is not configured, please call ConnectionManager::configure() method or setup putenv(\'%s=/path/to/config/file.php\') variable',
