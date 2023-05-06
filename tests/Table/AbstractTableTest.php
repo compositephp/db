@@ -48,17 +48,17 @@ final class AbstractTableTest extends BaseTableTest
             [
                 new Tables\TestAutoincrementSdTable(),
                 Entities\TestAutoincrementSdEntity::fromArray(['id' => 123, 'name' => 'John']),
-                ['id' => 123],
+                ['id' => 123, 'deleted_at' => null],
             ],
             [
                 new Tables\TestCompositeSdTable(),
                 new Entities\TestCompositeSdEntity(user_id: 123, post_id: 456, message: 'Text'),
-                ['user_id' => 123, 'post_id' => 456],
+                ['user_id' => 123, 'post_id' => 456, 'deleted_at' => null],
             ],
             [
                 new Tables\TestUniqueSdTable(),
                 new Entities\TestUniqueSdEntity(id: '123abc', name: 'John'),
-                ['id' => '123abc'],
+                ['id' => '123abc', 'deleted_at' => null],
             ],
         ];
     }

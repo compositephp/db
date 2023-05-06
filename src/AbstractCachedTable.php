@@ -77,7 +77,7 @@ abstract class AbstractCachedTable extends AbstractTable
      */
     public function deleteMany(array $entities): bool
     {
-        return $this->getConnection()->transactional(function() use ($entities) {
+        return (bool)$this->getConnection()->transactional(function() use ($entities) {
             $cacheKeys = [];
             foreach ($entities as $entity) {
                 $cacheKeys = array_merge($cacheKeys, $this->collectCacheKeysByEntity($entity));
@@ -244,6 +244,9 @@ abstract class AbstractCachedTable extends AbstractTable
             $formattedParts = [];
             foreach ($parts as $part) {
                 if (is_array($part)) {
+                    if ($this->config->isSoftDelete && array_key_exists('deleted_at', $part)) {
+                        unset($part['deleted_at']);
+                    }
                     $string = json_encode($part);
                 } else {
                     $string = strval($part);

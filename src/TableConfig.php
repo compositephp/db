@@ -55,6 +55,9 @@ class TableConfig
         foreach (class_uses($schema->class) as $traitClass) {
             if ($traitClass === Traits\SoftDelete::class) {
                 $isSoftDelete = true;
+                if (!\in_array('deleted_at', $primaryKeys)) {
+                    $primaryKeys[] = 'deleted_at';
+                }
             } elseif ($traitClass === Traits\OptimisticLock::class) {
                 $isOptimisticLock = true;
             }

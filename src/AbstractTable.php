@@ -2,10 +2,12 @@
 
 namespace Composite\DB;
 
+use Composite\DB\Helpers\DateTimeHelper;
 use Composite\Entity\AbstractEntity;
 use Composite\DB\Exceptions\DbException;
 use Composite\Entity\Exceptions\EntityException;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Query\QueryBuilder;
 
 abstract class AbstractTable
@@ -45,7 +47,7 @@ abstract class AbstractTable
         $this->config->checkEntity($entity);
         if ($entity->isNew()) {
             $connection = $this->getConnection();
-            $insertData = $entity->toArray();
+            $insertData = $this->formatData($entity->toArray());
             $this->getConnection()->insert($this->getTableName(), $insertData);
 
             if ($this->config->autoIncrementKey) {
@@ -118,8 +120,13 @@ abstract class AbstractTable
         $this->config->checkEntity($entity);
         if ($this->config->isSoftDelete) {
             if (method_exists($entity, 'delete')) {
+                $condition = $this->getPkCondition($entity);
+                $this->getConnection()->update(
+                    $this->getTableName(),
+                    ['deleted_at' => DateTimeHelper::dateTimeToString(new \DateTime())],
+                    $condition,
+                );
                 $entity->delete();
-                $this->save($entity);
             }
         } else {
             $where = $this->getPkCondition($entity);
@@ -133,7 +140,7 @@ abstract class AbstractTable
      */
     public function deleteMany(array $entities): bool
     {
-        return $this->getConnection()->transactional(function() use ($entities) {
+        return (bool)$this->getConnection()->transactional(function() use ($entities) {
             foreach ($entities as $entity) {
                 $this->delete($entity);
             }
@@ -250,7 +257,11 @@ abstract class AbstractTable
             }
         } else {
             foreach ($this->config->primaryKeys as $key) {
-                $condition[$key] = $data;
+                if ($this->config->isSoftDelete && $key === 'deleted_at') {
+                    $condition['deleted_at'] = null;
+                } else {
+                    $condition[$key] = $data;
+                }
             }
         }
         return $condition;
@@ -287,5 +298,17 @@ abstract class AbstractTable
                 $query->setParameter($column, $value);
             }
         }
+    }
+
+    private function formatData(array $data): array
+    {
+        foreach ($data as $columnName => $value) {
+            if ($this->getConnection()->getDatabasePlatform() instanceof AbstractMySQLPlatform) {
+                if (is_bool($value)) {
+                    $data[$columnName] = $value ? 1 : 0;
+                }
+            }
+        }
+        return $data;
     }
 }
