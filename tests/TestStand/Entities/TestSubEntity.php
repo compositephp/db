@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Composite\DB\Tests\TestStand\Entities\Enums;
+namespace Composite\DB\Tests\TestStand\Entities;
 
 use Composite\Entity\AbstractEntity;
 

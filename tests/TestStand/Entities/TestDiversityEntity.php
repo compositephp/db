@@ -6,7 +6,6 @@ use Composite\DB\Tests\TestStand\Entities\Castable\TestCastableIntObject;
 use Composite\DB\Tests\TestStand\Entities\Castable\TestCastableStringObject;
 use Composite\DB\Tests\TestStand\Entities\Enums\TestBackedIntEnum;
 use Composite\DB\Tests\TestStand\Entities\Enums\TestBackedStringEnum;
-use Composite\DB\Tests\TestStand\Entities\Enums\TestSubEntity;
 use Composite\DB\Tests\TestStand\Entities\Enums\TestUnitEnum;
 use Composite\DB\Attributes;
 use Composite\Entity\AbstractEntity;

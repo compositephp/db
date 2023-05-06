@@ -5,7 +5,6 @@ namespace Composite\DB\Tests\TestStand\Entities;
 use Composite\DB\Attributes;
 use Composite\DB\Tests\TestStand\Entities\Castable\TestCastableIntObject;
 use Composite\DB\Tests\TestStand\Entities\Enums\TestBackedStringEnum;
-use Composite\DB\Tests\TestStand\Entities\Enums\TestSubEntity;
 use Composite\DB\Tests\TestStand\Entities\Enums\TestUnitEnum;
 use Composite\Entity\AbstractEntity;
 
