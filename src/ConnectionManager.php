@@ -12,7 +12,9 @@ use Doctrine\DBAL\Exception;
 class ConnectionManager
 {
     private const CONNECTIONS_CONFIG_ENV_VAR = 'CONNECTIONS_CONFIG_FILE';
+    /** @var array<string, array<string, mixed>>|null  */
     private static ?array $configs = null;
+    /** @var array<string, Connection>  */
     private static array $connections = [];
 
     /**
@@ -35,6 +37,7 @@ class ConnectionManager
     }
 
     /**
+     * @return array<string, mixed>
      * @throws DbException
      */
     private static function getConnectionParams(string $name): array
@@ -46,6 +49,7 @@ class ConnectionManager
     }
 
     /**
+     * @return array<string, array<string, mixed>>
      * @throws DbException
      */
     private static function loadConfigs(): array

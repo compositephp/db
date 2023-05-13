@@ -80,6 +80,7 @@ class CombinedTransaction
 
     /**
      * Pessimistic lock
+     * @param string[] $keyParts
      * @throws DbException
      */
     public function lock(CacheInterface $cache, array $keyParts, int $duration = 10): void

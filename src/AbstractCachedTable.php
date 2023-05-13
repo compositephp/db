@@ -37,7 +37,7 @@ abstract class AbstractCachedTable extends AbstractTable
 
     /**
      * @param AbstractEntity[] $entities
-     * @return  AbstractEntity[]
+     * @return AbstractEntity[]
      * @throws \Throwable
      */
     public function saveMany(array $entities): array
@@ -128,6 +128,7 @@ abstract class AbstractCachedTable extends AbstractTable
     }
 
     /**
+     * @param array<string, mixed> $whereParams
      * @param array<string, string>|string $orderBy
      * @return array<string, mixed>[]
      */
@@ -175,6 +176,12 @@ abstract class AbstractCachedTable extends AbstractTable
         return $data;
     }
 
+    /**
+     * @param mixed[] $ids
+     * @param int|\DateInterval|null $ttl
+     * @return array<array<string, mixed>>
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     */
     protected function findMultiCachedInternal(array $ids, null|int|\DateInterval $ttl = null): array
     {
         $result = $cacheKeys = $foundIds = [];
@@ -199,6 +206,10 @@ abstract class AbstractCachedTable extends AbstractTable
         return $result;
     }
 
+    /**
+     * @param string|int|array<string, mixed>|AbstractEntity $keyOrEntity
+     * @throws \Composite\Entity\Exceptions\EntityException
+     */
     protected function getOneCacheKey(string|int|array|AbstractEntity $keyOrEntity): string
     {
         if (!is_array($keyOrEntity)) {
@@ -209,6 +220,10 @@ abstract class AbstractCachedTable extends AbstractTable
         return $this->buildCacheKey('o', $condition ?: 'one');
     }
 
+    /**
+     * @param array<string, mixed> $whereParams
+     * @param array<string, string>|string $orderBy
+     */
     protected function getListCacheKey(
         string $whereString = '',
         array $whereParams = [],
@@ -225,6 +240,9 @@ abstract class AbstractCachedTable extends AbstractTable
         );
     }
 
+    /**
+     * @param array<string, mixed> $whereParams
+     */
     protected function getCountCacheKey(
         string $whereString = '',
         array $whereParams = [],
@@ -247,7 +265,7 @@ abstract class AbstractCachedTable extends AbstractTable
                     if ($this->config->isSoftDelete && array_key_exists('deleted_at', $part)) {
                         unset($part['deleted_at']);
                     }
-                    $string = json_encode($part);
+                    $string = json_encode($part, JSON_THROW_ON_ERROR);
                 } else {
                     $string = strval($part);
                 }
@@ -273,10 +291,13 @@ abstract class AbstractCachedTable extends AbstractTable
     {
         $string = mb_strtolower($string);
         $string = str_replace(['!=', '<>', '>', '<', '='], ['_not_', '_not_', '_gt_', '_lt_', '_eq_'], $string);
-        $string =  preg_replace('/\W/', '_', $string);
-        return trim(preg_replace('/_+/', '_', $string), '_');
+        $string =  (string)preg_replace('/\W/', '_', $string);
+        return trim((string)preg_replace('/_+/', '_', $string), '_');
     }
 
+    /**
+     * @param array<string, mixed> $whereParams
+     */
     private function prepareWhereKey(string $whereString, array $whereParams): ?string
     {
         if (!$whereString) {

@@ -9,6 +9,10 @@ use Composite\Entity\Schema;
 
 class TableConfig
 {
+    /**
+     * @param class-string<AbstractEntity> $entityClass
+     * @param string[] $primaryKeys
+     */
     public function __construct(
         public readonly string $connectionName,
         public readonly string $tableName,
@@ -26,12 +30,7 @@ class TableConfig
     public static function fromEntitySchema(Schema $schema): TableConfig
     {
         /** @var Attributes\Table|null $tableAttribute */
-        $tableAttribute = null;
-        foreach ($schema->attributes as $attribute) {
-            if ($attribute instanceof Attributes\Table) {
-                $tableAttribute = $attribute;
-            }
-        }
+        $tableAttribute = $schema->getFirstAttributeByClass(Attributes\Table::class);
         if (!$tableAttribute) {
             throw new EntityException(sprintf(
                 'Attribute `%s` not found in Entity `%s`',

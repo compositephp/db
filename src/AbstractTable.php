@@ -148,6 +148,10 @@ abstract class AbstractTable
         });
     }
 
+    /**
+     * @param array<string, mixed> $whereParams
+     * @throws \Doctrine\DBAL\Exception
+     */
     protected function countAllInternal(string $whereString = '', array $whereParams = []): int
     {
         $query = $this->select('COUNT(*)');
@@ -161,12 +165,22 @@ abstract class AbstractTable
         return intval($query->executeQuery()->fetchOne());
     }
 
+    /**
+     * @return array<string, mixed>|null
+     * @throws EntityException
+     * @throws \Doctrine\DBAL\Exception
+     */
     protected function findByPkInternal(mixed $pk): ?array
     {
         $where = $this->getPkCondition($pk);
         return $this->findOneInternal($where);
     }
 
+    /**
+     * @param array<string, mixed> $where
+     * @return array<string, mixed>|null
+     * @throws \Doctrine\DBAL\Exception
+     */
     protected function findOneInternal(array $where): ?array
     {
         $query = $this->select();
@@ -175,6 +189,12 @@ abstract class AbstractTable
         return $query->fetchAssociative() ?: null;
     }
 
+    /**
+     * @param array<string, mixed> $whereParams
+     * @param array<string, string>|string $orderBy
+     * @return array<string, mixed>
+     * @throws \Doctrine\DBAL\Exception
+     */
     protected function findAllInternal(
         string $whereString = '',
         array $whereParams = [],
@@ -224,6 +244,9 @@ abstract class AbstractTable
         }
     }
 
+    /**
+     * @return AbstractEntity[]
+     */
     final protected function createEntities(mixed $data): array
     {
         if (!is_array($data)) {
@@ -245,6 +268,11 @@ abstract class AbstractTable
         return $result;
     }
 
+    /**
+     * @param int|string|array<string, mixed>|AbstractEntity $data
+     * @return array<string, mixed>
+     * @throws EntityException
+     */
     protected function getPkCondition(int|string|array|AbstractEntity $data): array
     {
         $condition = [];
@@ -267,6 +295,9 @@ abstract class AbstractTable
         return $condition;
     }
 
+    /**
+     * @param array<string, mixed>|QueryBuilder $query
+     */
     protected function enrichCondition(array|QueryBuilder &$query): void
     {
         if ($this->config->isSoftDelete) {
@@ -288,6 +319,9 @@ abstract class AbstractTable
         return (clone $this->selectQuery)->select($select);
     }
 
+    /**
+     * @param array<string, mixed> $where
+     */
     private function buildWhere(QueryBuilder $query, array $where): void
     {
         foreach ($where as $column => $value) {
@@ -300,6 +334,11 @@ abstract class AbstractTable
         }
     }
 
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     * @throws \Doctrine\DBAL\Exception
+     */
     private function formatData(array $data): array
     {
         foreach ($data as $columnName => $value) {

@@ -2,7 +2,7 @@
 
 namespace Composite\DB\Attributes;
 
-#[\Attribute]
+#[\Attribute(\Attribute::TARGET_PROPERTY | \Attribute::TARGET_PARAMETER)]
 class PrimaryKey
 {
     public function __construct(
