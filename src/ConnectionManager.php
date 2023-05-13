@@ -40,27 +40,7 @@ class ConnectionManager
     private static function getConnectionParams(string $name): array
     {
         if (self::$configs === null) {
-            $configFile = getenv(self::CONNECTIONS_CONFIG_ENV_VAR, true) ?: ($_ENV[self::CONNECTIONS_CONFIG_ENV_VAR] ?? false);
-            if (empty($configFile)) {
-                throw new DbException(sprintf(
-                    'ConnectionManager is not configured, please call ConnectionManager::configure() method or setup putenv(\'%s=/path/to/config/file.php\') variable',
-                    self::CONNECTIONS_CONFIG_ENV_VAR
-                ));
-            }
-            if (!file_exists($configFile)) {
-                throw new DbException(sprintf(
-                    'Connections config file `%s` does not exist',
-                    $configFile
-                ));
-            }
-            $configContent = require_once $configFile;
-            if (empty($configContent) || !is_array($configContent)) {
-                throw new DbException(sprintf(
-                    'Connections config file `%s` should return array of connection params',
-                    $configFile
-                ));
-            }
-            self::configure($configContent);
+            self::$configs = self::loadConfigs();
         }
         return self::$configs[$name] ?? throw new DbException("Connection config `$name` not found");
     }
@@ -68,17 +48,38 @@ class ConnectionManager
     /**
      * @throws DbException
      */
-    private static function configure(array $configs): void
+    private static function loadConfigs(): array
     {
-        foreach ($configs as $name => $connectionConfig) {
+        $configFile = getenv(self::CONNECTIONS_CONFIG_ENV_VAR, true) ?: ($_ENV[self::CONNECTIONS_CONFIG_ENV_VAR] ?? false);
+        if (empty($configFile)) {
+            throw new DbException(sprintf(
+                'ConnectionManager is not configured, please define ENV variable `%s`',
+                self::CONNECTIONS_CONFIG_ENV_VAR
+            ));
+        }
+        if (!file_exists($configFile)) {
+            throw new DbException(sprintf(
+                'Connections config file `%s` does not exist',
+                $configFile
+            ));
+        }
+        $configFileContent = require_once $configFile;
+        if (empty($configFileContent) || !is_array($configFileContent)) {
+            throw new DbException(sprintf(
+                'Connections config file `%s` should return array of connection params',
+                $configFile
+            ));
+        }
+        $result = [];
+        foreach ($configFileContent as $name => $connectionConfig) {
             if (empty($name) || !is_string($name)) {
                 throw new DbException('Config has invalid connection name ' . var_export($name, true));
             }
             if (empty($connectionConfig) || !is_array($connectionConfig)) {
                 throw new DbException("Connection `$name` has invalid connection params");
             }
-            self::$configs[$name] = $connectionConfig;
+            $result[$name] = $connectionConfig;
         }
-        self::$configs = $configs;
+        return $result;
     }
 }
