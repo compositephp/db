@@ -31,7 +31,7 @@ just use native php class syntax.
 It also has many popular features such as:
 
 * **Query Builder** - build your queries with constructor, based on [doctrine/dbal](https://github.com/doctrine/dbal)
-* **Migrations** - based on [doctrine/migrations](https://github.com/doctrine/migrations)
+* **Migrations** - synchronise your php entities with database tables
 
 But there is 1 sacrifice for all these features - there is no support for relations in Composite DB. Its too much
 uncontrollable magic and hidden bottlenecks with "JOINs" and its not possible to implement automatic caching with

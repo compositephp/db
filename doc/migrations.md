@@ -2,96 +2,90 @@
 
 > **_NOTE:_**  This is experimental feature
 
-Migrations used a bridge to [doctrine/migrations](https://github.com/doctrine/migrations) package.
-If you are not familiar with it, please read documentation before using composite bridge.
+Code generation is a key feature of the Composite Sync package. 
+This enables you to generate Entity classes directly from SQL tables, thereby enabling a literal reflection of the SQL table schema into native PHP classes.
 
-1. Install package:
-    ```shell
-    $ composer require compositephp/doctrine-migrations
-    ```
+## Supported Databases
+- MySQL
+- Postgres (Coming soon)
+- SQLite (Coming soon)
 
-2. Configure bridge:
-    ```php
-    $bridge = new \Composite\DoctrineMigrations\SchemaProviderBridge(
-        entityDirs: [
-           '/path/to/your/src', //path to your source code, where bridge will search for entities
-        ],
-        connectionName: 'sqlite', //only entities with this connection name will be affected 
-        connection: $connection, //Doctrine\DBAL\Connection instance 
-    ); 
-    ```
-   
-3. Inject bridge into `\Doctrine\Migrations\DependencyFactory` as `\Doctrine\Migrations\Provider\SchemaProvider`
-instance.
-    ```php
-    $dependencyFactory->setDefinition(SchemaProvider::class, static fn () => $bridge);
-    ```
+## Getting Started
 
-Full example:
+To begin using Composite Sync in your project, follow these steps:
+
+### 1. Install package via composer:
+ ```shell
+ $ composer require compositephp/sync
+ ```
+### 2. Configure connections
+You need to configure ConnectionManager, see instructions [here](configuration.md)
+
+### 3. Configure commands
+
+Add [symfony/console](https://symfony.com/doc/current/components/console.html) commands to your application:
+- Composite\Sync\Commands\GenerateEntityCommand
+- Composite\Sync\Commands\GenerateTableCommand
+
+Here is an example of a minimalist, functional PHP file:
+
 ```php
 <?php declare(strict_types=1);
+include 'vendor/autoload.php';
 
-use Doctrine\DBAL\DriverManager;
-use Doctrine\Migrations\Configuration\Configuration;
-use Doctrine\Migrations\Configuration\Connection\ExistingConnection;
-use Doctrine\Migrations\Configuration\Migration\ExistingConfiguration;
-use Doctrine\Migrations\DependencyFactory;
-use Doctrine\Migrations\Metadata\Storage\TableMetadataStorageConfiguration;
-use Doctrine\Migrations\Provider\SchemaProvider;
-use Doctrine\Migrations\Tools\Console\Command;
+use Composite\Sync\Commands;
 use Symfony\Component\Console\Application;
 
-include __DIR__ . '/vendor/autoload.php';
+//may be changed with .env file
+putenv('CONNECTIONS_CONFIG_FILE=/path/to/your/connections/config.php');
 
-$connection = DriverManager::getConnection([
-    'driver' => 'pdo_mysql',
-    'dbname' => 'test',
-    'user' => 'test',
-    'password' => 'test',
-    'host' => '127.0.0.1',
+$app = new Application();
+$app->addCommands([
+     new Commands\GenerateEntityCommand(),
+     new Commands\GenerateTableCommand(),
 ]);
-
-$configuration = new Configuration();
-
-$configuration->addMigrationsDirectory('Composite\DoctrineMigrations\Tests\runtime\migrations', __DIR__ . '/tests/runtime/migrations');
-$configuration->setAllOrNothing(true);
-$configuration->setCheckDatabasePlatform(false);
-
-$storageConfiguration = new TableMetadataStorageConfiguration();
-$storageConfiguration->setTableName('doctrine_migration_versions');
-
-$configuration->setMetadataStorageConfiguration($storageConfiguration);
-
-$dependencyFactory = DependencyFactory::fromConnection(
-    new ExistingConfiguration($configuration),
-    new ExistingConnection($connection)
-);
-
-$bridge = new \Composite\DoctrineMigrations\SchemaProviderBridge(
-    entityDirs: [
-        __DIR__ . '/src',
-    ],
-    connectionName: 'mysql',
-    connection: $connection,
-);
-$dependencyFactory->setDefinition(SchemaProvider::class, static fn () => $bridge);
-
-$cli = new Application('Migrations');
-$cli->setCatchExceptions(true);
-
-$cli->addCommands(array(
-    new Command\DumpSchemaCommand($dependencyFactory),
-    new Command\ExecuteCommand($dependencyFactory),
-    new Command\GenerateCommand($dependencyFactory),
-    new Command\LatestCommand($dependencyFactory),
-    new Command\ListCommand($dependencyFactory),
-    new Command\MigrateCommand($dependencyFactory),
-    new Command\DiffCommand($dependencyFactory),
-    new Command\RollupCommand($dependencyFactory),
-    new Command\StatusCommand($dependencyFactory),
-    new Command\SyncMetadataCommand($dependencyFactory),
-    new Command\VersionCommand($dependencyFactory),
-));
-
-$cli->run();
+$app->run();
 ```
+## Available commands
+
+* ### composite:generate-entity
+
+The command examines the specific SQL table and generates an [Composite\Entity\AbstractEntity](https://github.com/compositephp/entity) PHP class.
+This class embodies the table structure using native PHP syntax, thereby representing the original SQL table in a more PHP-friendly format.
+
+```shell
+php cli.php composite:generate-entity connection_name TableName 'App\Models\EntityName'
+```
+
+| Argument   | Required | Description                                          |
+|------------|----------|------------------------------------------------------|
+| connection | Yes      | Name of connection from connection config file       |
+| table      | Yes      | Name of SQL table                                    |
+| entity     | Yes      | Full classname of the class that needs to be created |
+
+Options:
+
+| Option  | Description             |
+|---------|-------------------------|
+| --force | Overwrite existing file |
+
+* ### composite:generate-table
+
+The command examines the specific Entity and generates a [Table](https://github.com/compositephp/db) PHP class.
+This class acts as a gateway to a specific SQL table, providing user-friendly CRUD tools for interacting with SQL right off the bat.
+
+```shell
+php cli.php composite:generate-table connection_name TableName 'App\Models\EntityName'
+```
+
+| Argument  | Required | Description                                   |
+|-----------|----------|-----------------------------------------------|
+| entity    | Yes      | Full Entity classname                         |
+| table     | No       | Full Table classname that needs to be created |
+
+Options:
+
+| Option   | Description                                |
+|----------|--------------------------------------------|
+| --cached | Generate cached version of PHP Table class |
+| --force  | Overwrite existing file                    |
