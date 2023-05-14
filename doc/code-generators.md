@@ -1,7 +1,7 @@
 # Code generators
 
-Composite Sync is a powerful and flexible PHP library designed to streamline and automate the synchronization process between SQL database table structures and PHP entity classes.
-By providing a set of easy-to-use tools, Composite Sync eliminates the need for manual synchronization and helps you maintain the consistency of your application's data model.
+Code generation is on of key features of the Composite Sync package.
+This enables you to generate Entity classes directly from SQL tables, thereby enabling a literal reflection of the SQL table schema into native PHP classes.
 
 ## Supported Databases
 - MySQL

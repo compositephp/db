@@ -2,8 +2,10 @@
 
 > **_NOTE:_**  This is experimental feature
 
-Code generation is a key feature of the Composite Sync package. 
-This enables you to generate Entity classes directly from SQL tables, thereby enabling a literal reflection of the SQL table schema into native PHP classes.
+Migrations enable you to maintain your database schema within your PHP entity classes. 
+Any modification made in your class triggers the generation of migration files. 
+These files execute SQL queries which synchronize the schema from the PHP class to the corresponding SQL table. 
+This mechanism ensures consistent alignment between your codebase and the database structure.
 
 ## Supported Databases
 - MySQL
@@ -12,7 +14,7 @@ This enables you to generate Entity classes directly from SQL tables, thereby en
 
 ## Getting Started
 
-To begin using Composite Sync in your project, follow these steps:
+To begin using migrations you need to add Composite Sync package into your project and configure it:
 
 ### 1. Install package via composer:
  ```shell
