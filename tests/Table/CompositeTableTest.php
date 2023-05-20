@@ -2,6 +2,8 @@
 
 namespace Composite\DB\Tests\Table;
 
+use Composite\DB\AbstractTable;
+use Composite\DB\TableConfig;
 use Composite\DB\Tests\TestStand\Tables;
 use Composite\DB\Tests\TestStand\Entities;
 use Composite\DB\Tests\TestStand\Interfaces\ICompositeTable;
@@ -37,11 +39,13 @@ final class CompositeTableTest extends BaseTableTest
     }
 
     /**
+     * @param class-string<Entities\TestCompositeEntity|Entities\TestCompositeSdEntity> $class
      * @dataProvider crud_dataProvider
      */
-    public function test_crud(ICompositeTable $table, string $class): void
+    public function test_crud(AbstractTable&ICompositeTable $table, string $class): void
     {
         $table->truncate();
+        $tableConfig = TableConfig::fromEntitySchema($class::schema());
 
         $entity = new $class(
             user_id: mt_rand(1, 1000000),
@@ -57,15 +61,14 @@ final class CompositeTableTest extends BaseTableTest
         $this->assertEntityExists($table, $entity);
 
         $table->delete($entity);
-        $this->assertEntityNotExists($table, $entity);
 
-        $newEntity = new $entity(
-            user_id: $entity->user_id,
-            post_id: $entity->post_id,
-            message: 'Hello User',
-        );
-        $table->save($newEntity);
-        $this->assertEntityExists($table, $newEntity);
+        if ($tableConfig->hasSoftDelete()) {
+            /** @var Entities\TestCompositeSdEntity $deletedEntity */
+            $deletedEntity = $table->findOne(user_id: $entity->user_id, post_id: $entity->post_id);
+            $this->assertTrue($deletedEntity->isDeleted());
+        } else {
+            $this->assertEntityNotExists($table, $entity);
+        }
     }
 
     private function assertEntityExists(ICompositeTable $table, Entities\TestCompositeEntity $entity): void

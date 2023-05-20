@@ -2,6 +2,8 @@
 
 namespace Composite\DB\Helpers;
 
+use Doctrine\DBAL\Platforms;
+
 class DateTimeHelper
 {
     final public const DEFAULT_TIMESTAMP = '1970-01-01 00:00:01';

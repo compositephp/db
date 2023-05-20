@@ -42,7 +42,7 @@ class TestCompositeTable extends \Composite\DB\AbstractTable implements IComposi
     {
         return $this->countAllInternal(
             'user_id = :user_id',
-            ['user_id' => $userId],
+            ['user_id' => $userId, 'deleted_at' => null],
         );
     }
 

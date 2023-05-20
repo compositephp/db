@@ -30,8 +30,8 @@ final class TableConfigTest extends \PHPUnit\Framework\TestCase
         $tableConfig = TableConfig::fromEntitySchema($schema);
         $this->assertNotEmpty($tableConfig->connectionName);
         $this->assertNotEmpty($tableConfig->tableName);
-        $this->assertTrue($tableConfig->isSoftDelete);
-        $this->assertCount(2, $tableConfig->primaryKeys);
+        $this->assertTrue($tableConfig->hasSoftDelete());
+        $this->assertCount(1, $tableConfig->primaryKeys);
         $this->assertSame('id', $tableConfig->autoIncrementKey);
     }
 }

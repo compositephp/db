@@ -262,9 +262,6 @@ abstract class AbstractCachedTable extends AbstractTable
             $formattedParts = [];
             foreach ($parts as $part) {
                 if (is_array($part)) {
-                    if ($this->config->isSoftDelete && array_key_exists('deleted_at', $part)) {
-                        unset($part['deleted_at']);
-                    }
                     $string = json_encode($part, JSON_THROW_ON_ERROR);
                 } else {
                     $string = strval($part);

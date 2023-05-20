@@ -2,6 +2,8 @@
 
 namespace Composite\DB\Tests\Table;
 
+use Composite\DB\AbstractTable;
+use Composite\DB\TableConfig;
 use Composite\DB\Tests\TestStand\Tables;
 use Composite\DB\Tests\TestStand\Entities;
 use Composite\DB\Tests\TestStand\Interfaces\IAutoincrementTable;
@@ -37,11 +39,13 @@ final class AutoIncrementTableTest extends BaseTableTest
     }
 
     /**
+     * @param class-string<Entities\TestAutoincrementEntity|Entities\TestAutoincrementSdEntity> $class
      * @dataProvider crud_dataProvider
      */
-    public function test_crud(IAutoincrementTable $table, string $class): void
+    public function test_crud(AbstractTable&IAutoincrementTable $table, string $class): void
     {
         $table->truncate();
+        $tableConfig = TableConfig::fromEntitySchema($class::schema());
 
         $entity = new $class(
             name: $this->getUniqueName(),
@@ -62,7 +66,13 @@ final class AutoIncrementTableTest extends BaseTableTest
         $this->assertEquals($newName, $foundEntity->name);
 
         $table->delete($entity);
-        $this->assertEntityNotExists($table, $entity->id, $entity->name);
+        if ($tableConfig->hasSoftDelete()) {
+            /** @var Entities\TestAutoincrementSdEntity $deletedEntity */
+            $deletedEntity = $table->findByPk($entity->id);
+            $this->assertTrue($deletedEntity->isDeleted());
+        } else {
+            $this->assertEntityNotExists($table, $entity->id, $entity->name);
+        }
     }
 
     private function assertEntityExists(IAutoincrementTable $table, Entities\TestAutoincrementEntity $entity): void

@@ -48,17 +48,17 @@ final class AbstractTableTest extends BaseTableTest
             [
                 new Tables\TestAutoincrementSdTable(),
                 Entities\TestAutoincrementSdEntity::fromArray(['id' => 123, 'name' => 'John']),
-                ['id' => 123, 'deleted_at' => null],
+                ['id' => 123],
             ],
             [
                 new Tables\TestCompositeSdTable(),
                 new Entities\TestCompositeSdEntity(user_id: 123, post_id: 456, message: 'Text'),
-                ['user_id' => 123, 'post_id' => 456, 'deleted_at' => null],
+                ['user_id' => 123, 'post_id' => 456],
             ],
             [
                 new Tables\TestUniqueSdTable(),
                 new Entities\TestUniqueSdEntity(id: '123abc', name: 'John'),
-                ['id' => '123abc', 'deleted_at' => null],
+                ['id' => '123abc'],
             ],
         ];
     }
@@ -71,52 +71,6 @@ final class AbstractTableTest extends BaseTableTest
         $reflectionMethod = new \ReflectionMethod($table, 'getPkCondition');
         $actual = $reflectionMethod->invoke($table, $object);
         $this->assertEquals($expected, $actual);
-    }
-
-    public function enrichCondition_dataProvider(): array
-    {
-        return [
-            [
-                new Tables\TestAutoincrementTable(),
-                ['id' => 123],
-                ['id' => 123],
-            ],
-            [
-                new Tables\TestCompositeTable(),
-                ['user_id' => 123, 'post_id' => 456],
-                ['user_id' => 123, 'post_id' => 456],
-            ],
-            [
-                new Tables\TestUniqueTable(),
-                ['id' => '123abc'],
-                ['id' => '123abc'],
-            ],
-            [
-                new Tables\TestAutoincrementSdTable(),
-                ['id' => 123],
-                ['id' => 123, 'deleted_at' => null],
-            ],
-            [
-                new Tables\TestCompositeSdTable(),
-                ['user_id' => 123, 'post_id' => 456],
-                ['user_id' => 123, 'post_id' => 456, 'deleted_at' => null],
-            ],
-            [
-                new Tables\TestUniqueSdTable(),
-                ['id' => '123abc'],
-                ['id' => '123abc', 'deleted_at' => null],
-            ],
-        ];
-    }
-
-    /**
-     * @dataProvider enrichCondition_dataProvider
-     */
-    public function test_enrichCondition(AbstractTable $table, array $condition, array $expected): void
-    {
-        $reflectionMethod = new \ReflectionMethod($table, 'enrichCondition');
-        $reflectionMethod->invokeArgs($table, [&$condition]);
-        $this->assertEquals($expected, $condition);
     }
 
     public function test_illegalEntitySave(): void

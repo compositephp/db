@@ -47,6 +47,9 @@ abstract class AbstractTable
         $this->config->checkEntity($entity);
         if ($entity->isNew()) {
             $connection = $this->getConnection();
+            if ($this->config->hasUpdatedAt() && property_exists($entity, 'updated_at') && $entity->updated_at === null) {
+                $entity->updated_at = new \DateTimeImmutable();
+            }
             $insertData = $this->formatData($entity->toArray());
             $this->getConnection()->insert($this->getTableName(), $insertData);
 
@@ -62,9 +65,13 @@ abstract class AbstractTable
             }
             $connection = $this->getConnection();
             $where = $this->getPkCondition($entity);
-            $this->enrichCondition($where);
 
-            if ($this->config->isOptimisticLock && isset($entity->version)) {
+            if ($this->config->hasUpdatedAt() && property_exists($entity, 'updated_at')) {
+                $entity->updated_at = new \DateTimeImmutable();
+                $changedColumns['updated_at'] = DateTimeHelper::dateTimeToString($entity->updated_at);
+            }
+
+            if ($this->config->hasOptimisticLock() && isset($entity->version)) {
                 $currentVersion = $entity->version;
                 try {
                     $connection->beginTransaction();
@@ -118,19 +125,13 @@ abstract class AbstractTable
     public function delete(AbstractEntity &$entity): void
     {
         $this->config->checkEntity($entity);
-        if ($this->config->isSoftDelete) {
+        if ($this->config->hasSoftDelete()) {
             if (method_exists($entity, 'delete')) {
-                $condition = $this->getPkCondition($entity);
-                $this->getConnection()->update(
-                    $this->getTableName(),
-                    ['deleted_at' => DateTimeHelper::dateTimeToString(new \DateTime())],
-                    $condition,
-                );
                 $entity->delete();
+                $this->save($entity);
             }
         } else {
             $where = $this->getPkCondition($entity);
-            $this->enrichCondition($where);
             $this->getConnection()->delete($this->getTableName(), $where);
         }
     }
@@ -161,7 +162,6 @@ abstract class AbstractTable
                 $query->setParameter($param, $value);
             }
         }
-        $this->enrichCondition($query);
         return intval($query->executeQuery()->fetchOne());
     }
 
@@ -184,7 +184,6 @@ abstract class AbstractTable
     protected function findOneInternal(array $where): ?array
     {
         $query = $this->select();
-        $this->enrichCondition($where);
         $this->buildWhere($query, $where);
         return $query->fetchAssociative() ?: null;
     }
@@ -210,8 +209,6 @@ abstract class AbstractTable
                 $query->setParameter($param, $value);
             }
         }
-        $this->enrichCondition($query);
-
         if ($orderBy) {
             if (is_array($orderBy)) {
                 foreach ($orderBy as $column => $direction) {
@@ -285,30 +282,10 @@ abstract class AbstractTable
             }
         } else {
             foreach ($this->config->primaryKeys as $key) {
-                if ($this->config->isSoftDelete && $key === 'deleted_at') {
-                    $condition['deleted_at'] = null;
-                } else {
-                    $condition[$key] = $data;
-                }
+                $condition[$key] = $data;
             }
         }
         return $condition;
-    }
-
-    /**
-     * @param array<string, mixed>|QueryBuilder $query
-     */
-    protected function enrichCondition(array|QueryBuilder &$query): void
-    {
-        if ($this->config->isSoftDelete) {
-            if ($query instanceof QueryBuilder) {
-                $query->andWhere('deleted_at IS NULL');
-            } else {
-                if (!isset($query['deleted_at'])) {
-                    $query['deleted_at'] = null;
-                }
-            }
-        }
     }
 
     protected function select(string $select = '*'): QueryBuilder
@@ -342,6 +319,10 @@ abstract class AbstractTable
     private function formatData(array $data): array
     {
         foreach ($data as $columnName => $value) {
+            if ($value === null && $this->config->isPrimaryKey($columnName)) {
+                unset($data[$columnName]);
+                continue;
+            }
             if ($this->getConnection()->getDatabasePlatform() instanceof AbstractMySQLPlatform) {
                 if (is_bool($value)) {
                     $data[$columnName] = $value ? 1 : 0;

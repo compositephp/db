@@ -9,6 +9,8 @@ use Composite\Entity\Schema;
 
 class TableConfig
 {
+    private readonly array $entityTraits;
+
     /**
      * @param class-string<AbstractEntity> $entityClass
      * @param string[] $primaryKeys
@@ -19,10 +21,10 @@ class TableConfig
         public readonly string $entityClass,
         public readonly array $primaryKeys,
         public readonly ?string $autoIncrementKey = null,
-        public readonly bool $isSoftDelete = false,
-        public readonly bool $isOptimisticLock = false,
     )
-    {}
+    {
+        $this->entityTraits = array_fill_keys(class_uses($entityClass), true);
+    }
 
     /**
      * @throws EntityException
@@ -39,7 +41,6 @@ class TableConfig
         }
         $primaryKeys = [];
         $autoIncrementKey = null;
-        $isSoftDelete = $isOptimisticLock = false;
 
         foreach ($schema->columns as $column) {
             foreach ($column->attributes as $attribute) {
@@ -51,24 +52,12 @@ class TableConfig
                 }
             }
         }
-        foreach (class_uses($schema->class) as $traitClass) {
-            if ($traitClass === Traits\SoftDelete::class) {
-                $isSoftDelete = true;
-                if (!\in_array('deleted_at', $primaryKeys)) {
-                    $primaryKeys[] = 'deleted_at';
-                }
-            } elseif ($traitClass === Traits\OptimisticLock::class) {
-                $isOptimisticLock = true;
-            }
-        }
         return new TableConfig(
             connectionName: $tableAttribute->connection,
             tableName: $tableAttribute->name,
             entityClass: $schema->class,
             primaryKeys: $primaryKeys,
             autoIncrementKey: $autoIncrementKey,
-            isSoftDelete: $isSoftDelete,
-            isOptimisticLock: $isOptimisticLock,
         );
     }
 
@@ -83,5 +72,25 @@ class TableConfig
                 )
             );
         }
+    }
+
+    public function isPrimaryKey(string $columnName): bool
+    {
+        return \in_array($columnName, $this->primaryKeys);
+    }
+
+    public function hasSoftDelete(): bool
+    {
+        return !empty($this->entityTraits[Traits\SoftDelete::class]);
+    }
+
+    public function hasOptimisticLock(): bool
+    {
+        return !empty($this->entityTraits[Traits\OptimisticLock::class]);
+    }
+
+    public function hasUpdatedAt(): bool
+    {
+        return !empty($this->entityTraits[Traits\UpdatedAt::class]);
     }
 }
