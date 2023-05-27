@@ -93,27 +93,36 @@ public function findCustom(): array
 ```
 
 ## Transactions
+In order to encapsulate your operations within a single transaction, you have two strategies at your disposal:
+1. Use the internal table class method transaction() if your operations are confined to a single table.
+2. Use the Composite\DB\CombinedTransaction class if your operations involve multiple tables within a single transaction.
 
-To wrap you operations in 1 transactions there are 2 ways:
-1. Use internal table class method `transaction()` if you are working only with 1 table.
-2. Use class `Composite\DB\CombinedTransaction` if you need to work with several tables in 1 transaction.
+Below is a sample code snippet illustrating how you can use the CombinedTransaction class:
 
    ```php
+   // Create instances of the tables you want to work with
    $usersTable = new UsersTable();
    $photosTable = new PhotosTable();
-    
+   
+   // Instantiate the CombinedTransaction class
    $transaction = new CombinedTransaction();
    
+   // Create a new user and add it to the users table within the transaction
    $user = new User(...);
    $transaction->save($usersTable, $user);
    
+   // Create a new photo associated with the user and add it to the photos table within the transaction
    $photo = new Photo(
        user_id: $user->id, 
        ...
    );
    $transaction->save($photosTable, $photo);
+   
+   // Commit the transaction to finalize the changes
    $transaction->commit();
    ```
+
+Remember, using a transaction ensures that your operations are atomic. This means that either all changes are committed to the database, or if an error occurs, no changes are made.
    
 ## Locks
 If you worry about concurrency updates during your transaction and want to be sure that only 1 process changing your 
