@@ -6,6 +6,7 @@ use Composite\DB\Attributes;
 use Composite\DB\TableConfig;
 use Composite\DB\Traits;
 use Composite\Entity\AbstractEntity;
+use Composite\Entity\Exceptions\EntityException;
 use Composite\Entity\Schema;
 
 final class TableConfigTest extends \PHPUnit\Framework\TestCase
@@ -33,5 +34,21 @@ final class TableConfigTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue($tableConfig->hasSoftDelete());
         $this->assertCount(1, $tableConfig->primaryKeys);
         $this->assertSame('id', $tableConfig->autoIncrementKey);
+    }
+
+    public function test_missingAttribute(): void
+    {
+        $class = new
+        class extends AbstractEntity {
+            #[Attributes\PrimaryKey(autoIncrement: true)]
+            public readonly int $id;
+
+            public function __construct(
+                public string $str = 'abc',
+            ) {}
+        };
+        $schema = Schema::build($class::class);
+        $this->expectException(EntityException::class);
+        TableConfig::fromEntitySchema($schema);
     }
 }

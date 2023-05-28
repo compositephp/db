@@ -36,6 +36,9 @@ final class ConnectionManagerTest extends \PHPUnit\Framework\TestCase
             [
                 $testStandConfigsBaseDir . 'wrong_params_config.php',
             ],
+            [
+                $testStandConfigsBaseDir . 'wrong_doctrine_config.php',
+            ],
         ];
     }
 
@@ -62,11 +65,7 @@ final class ConnectionManagerTest extends \PHPUnit\Framework\TestCase
 
     public function test_getConnectionWithMissingName(): void
     {
-        try {
-            ConnectionManager::getConnection('invalid_name');
-            $this->assertTrue(false);
-        } catch (DbException) {
-            $this->assertTrue(true);
-        }
+        $this->expectException(DbException::class);
+        ConnectionManager::getConnection('invalid_name');
     }
 }
