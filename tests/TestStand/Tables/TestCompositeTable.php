@@ -46,17 +46,6 @@ class TestCompositeTable extends \Composite\DB\AbstractTable implements IComposi
         );
     }
 
-    public function test(): array
-    {
-        $rows = $this
-            ->select()
-            ->where()
-            ->orWhere()
-            ->orderBy()
-            ->fetchAllAssociative();
-        return $this->createEntities($rows);
-    }
-
     public function init(): bool
     {
         $this->getConnection()->executeStatement(

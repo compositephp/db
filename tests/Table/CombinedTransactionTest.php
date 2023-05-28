@@ -12,7 +12,10 @@ final class CombinedTransactionTest extends BaseTableTest
     public function test_transactionCommit(): void
     {
         $autoIncrementTable = new Tables\TestAutoincrementTable();
+        $autoIncrementTable->init();
+
         $compositeTable = new Tables\TestCompositeTable();
+        $compositeTable->init();
 
         $saveTransaction = new CombinedTransaction();
 
@@ -39,7 +42,10 @@ final class CombinedTransactionTest extends BaseTableTest
     public function test_transactionRollback(): void
     {
         $autoIncrementTable = new Tables\TestAutoincrementTable();
+        $autoIncrementTable->init();
+
         $compositeTable = new Tables\TestCompositeTable();
+        $compositeTable->init();
 
         $transaction = new CombinedTransaction();
 
@@ -58,7 +64,10 @@ final class CombinedTransactionTest extends BaseTableTest
     public function test_transactionException(): void
     {
         $autoIncrementTable = new Tables\TestAutoincrementTable();
+        $autoIncrementTable->init();
+
         $compositeTable = new Tables\TestCompositeTable();
+        $compositeTable->init();
 
         $transaction = new CombinedTransaction();
 
@@ -80,6 +89,8 @@ final class CombinedTransactionTest extends BaseTableTest
     {
         $cache = self::getCache();
         $table = new Tables\TestAutoincrementTable();
+        $table->init();
+
         $e1 = new Entities\TestAutoincrementEntity(name: 'Foo');
         $e2 = new Entities\TestAutoincrementEntity(name: 'Bar');
 

@@ -3,8 +3,6 @@
 namespace Composite\DB\Tests\Table;
 
 use Composite\DB\AbstractTable;
-use Composite\DB\ConnectionManager;
-use Composite\DB\Exceptions\DbException;
 use Composite\DB\Tests\TestStand\Entities;
 use Composite\DB\Tests\TestStand\Tables;
 use Composite\Entity\AbstractEntity;
