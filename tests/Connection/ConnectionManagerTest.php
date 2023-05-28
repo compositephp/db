@@ -16,8 +16,11 @@ final class ConnectionManagerTest extends \PHPUnit\Framework\TestCase
 
     public function invalidConfig_dataProvider(): array
     {
-        $testStandConfigsBaseDir = __DIR__ . '../TestStand/configs/';
+        $testStandConfigsBaseDir = __DIR__ . '/../TestStand/configs/';
         return [
+            [
+                '',
+            ],
             [
                 'invalid/path',
             ],
@@ -41,8 +44,11 @@ final class ConnectionManagerTest extends \PHPUnit\Framework\TestCase
      */
     public function test_invalidConfig(string $configPath): void
     {
+        $reflection = new \ReflectionClass(ConnectionManager::class);
+        $reflection->setStaticPropertyValue('configs', null);
         $currentPath = getenv('CONNECTIONS_CONFIG_FILE');
         putenv('CONNECTIONS_CONFIG_FILE=' . $configPath);
+
         try {
             ConnectionManager::getConnection('db1');
             $this->assertTrue(false);
@@ -50,6 +56,7 @@ final class ConnectionManagerTest extends \PHPUnit\Framework\TestCase
             $this->assertTrue(true);
         } finally {
             putenv('CONNECTIONS_CONFIG_FILE=' . $currentPath);
+            $reflection->setStaticPropertyValue('configs', null);
         }
     }
 
