@@ -14,18 +14,52 @@ final class ConnectionManagerTest extends \PHPUnit\Framework\TestCase
         $this->assertInstanceOf(Connection::class, $connection);
     }
 
-    public function test_getConnectionWithInvalidConfig(): void
+    public function invalidConfig_dataProvider(): array
     {
-        putenv('CONNECTIONS_CONFIG_FILE=invalid/path');
-        $this->expectException(DbException::class);
+        $testStandConfigsBaseDir = __DIR__ . '../TestStand/configs/';
+        return [
+            [
+                'invalid/path',
+            ],
+            [
+                $testStandConfigsBaseDir . 'empty_config.php',
+            ],
+            [
+                $testStandConfigsBaseDir . 'wrong_content_config.php',
+            ],
+            [
+                $testStandConfigsBaseDir . 'wrong_name_config.php',
+            ],
+            [
+                $testStandConfigsBaseDir . 'wrong_params_config.php',
+            ],
+        ];
+    }
 
-        ConnectionManager::getConnection('db1');
+    /**
+     * @dataProvider invalidConfig_dataProvider
+     */
+    public function test_invalidConfig(string $configPath): void
+    {
+        $currentPath = getenv('CONNECTIONS_CONFIG_FILE');
+        putenv('CONNECTIONS_CONFIG_FILE=' . $configPath);
+        try {
+            ConnectionManager::getConnection('db1');
+            $this->assertTrue(false);
+        } catch (DbException) {
+            $this->assertTrue(true);
+        } finally {
+            putenv('CONNECTIONS_CONFIG_FILE=' . $currentPath);
+        }
     }
 
     public function test_getConnectionWithMissingName(): void
     {
-        $this->expectException(DbException::class);
-
-        ConnectionManager::getConnection('missing_db');
+        try {
+            ConnectionManager::getConnection('invalid_name');
+            $this->assertTrue(false);
+        } catch (DbException) {
+            $this->assertTrue(true);
+        }
     }
 }
