@@ -32,6 +32,12 @@ jobs:
     - name: Install dependencies
       run: composer install --prefer-dist --no-progress
 
+    - name: Create runtime cache folder
+      run: mkdir -p -m 777 runtime/cache
+
+    - name: Create sqlite folder
+      run: mkdir -p -m 777 runtime/sqlite && touch runtime/sqlite/database.db
+
     - name: Execute Tests
       run: vendor/bin/phpunit tests --colors=always --coverage-clover=coverage.clover
       env:
