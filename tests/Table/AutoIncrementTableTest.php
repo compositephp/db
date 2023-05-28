@@ -73,6 +73,27 @@ final class AutoIncrementTableTest extends BaseTableTest
         } else {
             $this->assertEntityNotExists($table, $entity->id, $entity->name);
         }
+
+        $e1 = new $class($this->getUniqueName());
+        $e2 = new $class($this->getUniqueName());
+
+        [$e1, $e2] = $table->saveMany([$e1, $e2]);
+        $this->assertEntityExists($table, $e1);
+        $this->assertEntityExists($table, $e2);
+        $this->assertTrue($table->deleteMany([$e1, $e2]));
+
+        if ($tableConfig->hasSoftDelete()) {
+            /** @var Entities\TestAutoincrementSdEntity $deletedEntity1 */
+            $deletedEntity1 = $table->findByPk($e1->id);
+            $this->assertTrue($deletedEntity1->isDeleted());
+
+            /** @var Entities\TestAutoincrementSdEntity $deletedEntity2 */
+            $deletedEntity2 = $table->findByPk($e2->id);
+            $this->assertTrue($deletedEntity2->isDeleted());
+        } else {
+            $this->assertEntityNotExists($table, $e1->id, $e1->name);
+            $this->assertEntityNotExists($table, $e2->id, $e2->name);
+        }
     }
 
     private function assertEntityExists(IAutoincrementTable $table, Entities\TestAutoincrementEntity $entity): void

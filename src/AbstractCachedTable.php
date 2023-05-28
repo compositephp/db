@@ -44,10 +44,8 @@ abstract class AbstractCachedTable extends AbstractTable
     {
         return $this->getConnection()->transactional(function() use ($entities) {
             $cacheKeys = [];
-            foreach ($entities as $entity) {
+            foreach ($entities as &$entity) {
                 $cacheKeys = array_merge($cacheKeys, $this->collectCacheKeysByEntity($entity));
-            }
-            foreach ($entities as $entity) {
                 parent::save($entity);
             }
             if ($cacheKeys && !$this->cache->deleteMultiple(array_unique($cacheKeys))) {
@@ -81,8 +79,6 @@ abstract class AbstractCachedTable extends AbstractTable
             $cacheKeys = [];
             foreach ($entities as $entity) {
                 $cacheKeys = array_merge($cacheKeys, $this->collectCacheKeysByEntity($entity));
-            }
-            foreach ($entities as $entity) {
                 parent::delete($entity);
             }
             if ($cacheKeys && !$this->cache->deleteMultiple(array_unique($cacheKeys))) {
