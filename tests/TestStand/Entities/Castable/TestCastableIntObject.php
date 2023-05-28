@@ -2,7 +2,7 @@
 
 namespace Composite\DB\Tests\TestStand\Entities\Castable;
 
-use Composite\DB\Helpers\DateTimeHelper;
+use Composite\Entity\Helpers\DateTimeHelper;
 use Composite\Entity\CastableInterface;
 
 class TestCastableIntObject extends \DateTime implements CastableInterface

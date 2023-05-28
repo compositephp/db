@@ -2,7 +2,7 @@
 
 namespace Composite\DB;
 
-use Composite\DB\Helpers\DateTimeHelper;
+use Composite\Entity\Helpers\DateTimeHelper;
 use Composite\Entity\AbstractEntity;
 use Composite\DB\Exceptions\DbException;
 use Composite\Entity\Exceptions\EntityException;
