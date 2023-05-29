@@ -74,11 +74,6 @@ class TableConfig
         }
     }
 
-    public function isPrimaryKey(string $columnName): bool
-    {
-        return \in_array($columnName, $this->primaryKeys);
-    }
-
     public function hasSoftDelete(): bool
     {
         return !empty($this->entityTraits[Traits\SoftDelete::class]);
