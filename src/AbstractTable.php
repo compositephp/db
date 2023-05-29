@@ -214,7 +214,14 @@ abstract class AbstractTable
                     $query->addOrderBy($column, $direction);
                 }
             } else {
-                $query->orderBy($orderBy);
+                foreach (explode(',', $orderBy) as $orderByPart) {
+                    $orderByPart = trim($orderByPart);
+                    if (preg_match('/(.+)\s(asc|desc)$/i', $orderByPart, $orderByPartMatch)) {
+                        $query->addOrderBy($orderByPartMatch[1], $orderByPartMatch[2]);
+                    } else {
+                        $query->addOrderBy($orderByPart);
+                    }
+                }
             }
         }
         if ($limit > 0) {
