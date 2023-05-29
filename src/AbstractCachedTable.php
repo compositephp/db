@@ -190,11 +190,10 @@ abstract class AbstractCachedTable extends AbstractTable
             if ($cachedRow === null) {
                 continue;
             }
-            $result[] = $cachedRow;
-            if (empty($cacheKeys[$cacheKey])) {
-                continue;
+            if (isset($cacheKeys[$cacheKey])) {
+                $result[] = $cachedRow;
+                $foundIds[] = $cacheKeys[$cacheKey];
             }
-            $foundIds[] = $cacheKeys[$cacheKey];
         }
         $ids = array_diff($ids, $foundIds);
         foreach ($ids as $id) {

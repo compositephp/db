@@ -246,7 +246,7 @@ final class AbstractCachedTableTest extends BaseTableTest
     public function test_findMulti(): void
     {
         (new Tables\TestAutoincrementTable())->init();
-        
+
         $table = new Tables\TestAutoincrementCachedTable($this->getCache());
         $e1 = new Entities\TestAutoincrementEntity('John');
         $e2 = new Entities\TestAutoincrementEntity('Constantine');
@@ -259,5 +259,11 @@ final class AbstractCachedTableTest extends BaseTableTest
         $multi2 = $table->findMulti([$e1->id, $e2->id]);
         $this->assertEquals($e1, $multi2[0]);
         $this->assertEquals($e2, $multi2[1]);
+
+        $e11 = $table->findByPk($e1->id);
+        $this->assertEquals($e1, $e11);
+
+        $e111 = $table->findByPk($e1->id);
+        $this->assertEquals($e1, $e111);
     }
 }
