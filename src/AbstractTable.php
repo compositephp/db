@@ -7,7 +7,7 @@ use Composite\Entity\AbstractEntity;
 use Composite\DB\Exceptions\DbException;
 use Composite\Entity\Exceptions\EntityException;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Query\QueryBuilder;
 
 abstract class AbstractTable
@@ -324,15 +324,10 @@ abstract class AbstractTable
      */
     private function formatData(array $data): array
     {
+        $supportsBoolean = $this->getConnection()->getDatabasePlatform() instanceof PostgreSQLPlatform;
         foreach ($data as $columnName => $value) {
-            if ($value === null && $this->config->isPrimaryKey($columnName)) {
-                unset($data[$columnName]);
-                continue;
-            }
-            if ($this->getConnection()->getDatabasePlatform() instanceof AbstractMySQLPlatform) {
-                if (is_bool($value)) {
-                    $data[$columnName] = $value ? 1 : 0;
-                }
+            if (is_bool($value) && !$supportsBoolean) {
+                $data[$columnName] = $value ? 1 : 0;
             }
         }
         return $data;
