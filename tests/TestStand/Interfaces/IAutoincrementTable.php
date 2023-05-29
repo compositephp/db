@@ -13,5 +13,6 @@ interface IAutoincrementTable
      */
     public function findAllByName(string $name): array;
     public function countAllByName(string $name): int;
+    public function findRecent(int $limit, int $offset): array;
     public function truncate(): void;
 }

@@ -19,7 +19,7 @@ class TestAutoincrementSdTable extends TestAutoincrementTable
 
     public function findOneByName(string $name): ?TestAutoincrementSdEntity
     {
-        return $this->createEntity($this->findOneInternal(['name' => $name]));
+        return $this->createEntity($this->findOneInternal(['name' => $name, 'deleted_at' => null]));
     }
 
     /**
@@ -33,6 +33,18 @@ class TestAutoincrementSdTable extends TestAutoincrementTable
         ));
     }
 
+    /**
+     * @return TestAutoincrementSdEntity[]
+     */
+    public function findRecent(int $limit, int $offset): array
+    {
+        return $this->createEntities($this->findAllInternal(
+            orderBy: 'id DESC',
+            limit: $limit,
+            offset: $offset,
+        ));
+    }
+
     public function init(): bool
     {
         $this->getConnection()->executeStatement(
@@ -41,6 +53,7 @@ class TestAutoincrementSdTable extends TestAutoincrementTable
             (
                 `id` INTEGER NOT NULL CONSTRAINT TestAutoincrementSd_pk PRIMARY KEY AUTOINCREMENT,
                 `name` VARCHAR(255) NOT NULL,
+                `is_test` INTEGER NOT NULL DEFAULT 0,
                 `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
                 `deleted_at` TIMESTAMP NULL DEFAULT NULL
             );

@@ -48,7 +48,19 @@ class TestAutoincrementSdCachedTable extends AbstractCachedTable implements IAut
     {
         return $this->createEntities($this->findAllCachedInternal(
             'name = :name',
-            ['name' => $name],
+            ['name' => $name, 'deleted_at' => null],
+        ));
+    }
+
+    /**
+     * @return TestAutoincrementSdEntity[]
+     */
+    public function findRecent(int $limit, int $offset): array
+    {
+        return $this->createEntities($this->findAllInternal(
+            orderBy: 'id DESC',
+            limit: $limit,
+            offset: $offset,
         ));
     }
 

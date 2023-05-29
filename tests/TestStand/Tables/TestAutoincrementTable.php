@@ -30,8 +30,21 @@ class TestAutoincrementTable extends AbstractTable implements IAutoincrementTabl
     public function findAllByName(string $name): array
     {
         return $this->createEntities($this->findAllInternal(
-            'name = :name',
-            ['name' => $name],
+            whereString: 'name = :name',
+            whereParams: ['name' => $name],
+            orderBy: 'id',
+        ));
+    }
+
+    /**
+     * @return TestAutoincrementEntity[]
+     */
+    public function findRecent(int $limit, int $offset): array
+    {
+        return $this->createEntities($this->findAllInternal(
+            orderBy: ['id' => 'DESC'],
+            limit: $limit,
+            offset: $offset,
         ));
     }
 
@@ -51,6 +64,7 @@ class TestAutoincrementTable extends AbstractTable implements IAutoincrementTabl
             (
                 `id` INTEGER NOT NULL CONSTRAINT TestAutoincrement_pk PRIMARY KEY AUTOINCREMENT,
                 `name` VARCHAR(255) NOT NULL,
+                `is_test` INTEGER NOT NULL DEFAULT 0,
                 `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
             );
             "

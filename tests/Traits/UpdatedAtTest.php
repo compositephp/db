@@ -22,5 +22,16 @@ final class UpdatedAtTest extends \PHPUnit\Framework\TestCase
         $this->assertNotNull($dbEntity);
 
         $this->assertEquals($entity->updated_at, $dbEntity->updated_at);
+
+
+        $entity->name = 'Richard';
+        $table->save($entity);
+
+        $this->assertNotEquals($entity->updated_at, $dbEntity->updated_at);
+        $lastUpdatedAt = $entity->updated_at;
+
+        //should not update entity
+        $table->save($entity);
+        $this->assertEquals($lastUpdatedAt, $entity->updated_at);
     }
 }

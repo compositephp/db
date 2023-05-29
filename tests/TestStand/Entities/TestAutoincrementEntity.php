@@ -13,6 +13,7 @@ class TestAutoincrementEntity extends \Composite\Entity\AbstractEntity
 
     public function __construct(
         public string $name,
+        public bool $is_test = false,
         public readonly \DateTimeImmutable $created_at = new \DateTimeImmutable(),
     ) {}
 }

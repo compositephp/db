@@ -49,6 +49,7 @@ final class AutoIncrementTableTest extends BaseTableTest
 
         $entity = new $class(
             name: $this->getUniqueName(),
+            is_test: true,
         );
         $this->assertEntityNotExists($table, PHP_INT_MAX, uniqid());
 
@@ -80,6 +81,13 @@ final class AutoIncrementTableTest extends BaseTableTest
         [$e1, $e2] = $table->saveMany([$e1, $e2]);
         $this->assertEntityExists($table, $e1);
         $this->assertEntityExists($table, $e2);
+
+        $recentEntities = $table->findRecent(2, 0);
+        $this->assertEquals($e2, $recentEntities[0]);
+        $this->assertEquals($e1, $recentEntities[1]);
+        $preLastEntity = $table->findRecent(1, 1);
+        $this->assertEquals($e1, $preLastEntity[0]);
+
         $this->assertTrue($table->deleteMany([$e1, $e2]));
 
         if ($tableConfig->hasSoftDelete()) {

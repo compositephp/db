@@ -76,12 +76,29 @@ final class AbstractTableTest extends BaseTableTest
         $entity = new Entities\TestAutoincrementEntity(name: 'Foo');
         $compositeTable = new Tables\TestUniqueTable();
 
-        $exceptionCatch = false;
-        try {
-            $compositeTable->save($entity);
-        } catch (EntityException) {
-            $exceptionCatch = true;
-        }
-        $this->assertTrue($exceptionCatch);
+        $this->expectException(EntityException::class);
+        $compositeTable->save($entity);
+    }
+
+    public function test_illegalCreateEntity(): void
+    {
+        $table = new Tables\TestStrictTable();
+        $null = $table->buildEntity(['dti1' => 'abc']);
+        $this->assertNull($null);
+
+        $empty = $table->buildEntities([['dti1' => 'abc']]);
+        $this->assertEmpty($empty);
+
+        $empty = $table->buildEntities([]);
+        $this->assertEmpty($empty);
+
+        $empty = $table->buildEntities(false);
+        $this->assertEmpty($empty);
+
+        $empty = $table->buildEntities('abc');
+        $this->assertEmpty($empty);
+
+        $empty = $table->buildEntities(['abc']);
+        $this->assertEmpty($empty);
     }
 }

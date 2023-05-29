@@ -2,6 +2,7 @@
 .phpunit.result.cache
 .phpunit.cache
 coverage.clover
+coverage.txt
 vendor/
 composer.lock
 tests/runtime/

@@ -52,6 +52,18 @@ class TestAutoincrementCachedTable extends AbstractCachedTable implements IAutoi
         ));
     }
 
+    /**
+     * @return TestAutoincrementEntity[]
+     */
+    public function findRecent(int $limit, int $offset): array
+    {
+        return $this->createEntities($this->findAllInternal(
+            orderBy: ['id' => 'DESC'],
+            limit: $limit,
+            offset: $offset,
+        ));
+    }
+
     public function countAllByName(string $name): int
     {
         return $this->countAllCachedInternal(
