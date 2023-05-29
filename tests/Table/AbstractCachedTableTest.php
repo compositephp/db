@@ -245,6 +245,8 @@ final class AbstractCachedTableTest extends BaseTableTest
 
     public function test_findMulti(): void
     {
+        (new Tables\TestAutoincrementTable())->init();
+        
         $table = new Tables\TestAutoincrementCachedTable($this->getCache());
         $e1 = new Entities\TestAutoincrementEntity('John');
         $e2 = new Entities\TestAutoincrementEntity('Constantine');
