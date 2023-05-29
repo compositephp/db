@@ -187,6 +187,9 @@ abstract class AbstractCachedTable extends AbstractTable
         }
         $cache = $this->cache->getMultiple(array_keys($cacheKeys));
         foreach ($cache as $cacheKey => $cachedRow) {
+            if ($cachedRow === null) {
+                continue;
+            }
             $result[] = $cachedRow;
             if (empty($cacheKeys[$cacheKey])) {
                 continue;
@@ -195,7 +198,7 @@ abstract class AbstractCachedTable extends AbstractTable
         }
         $ids = array_diff($ids, $foundIds);
         foreach ($ids as $id) {
-            if ($row = $this->findOneCachedInternal($id, $ttl)) {
+            if ($row = $this->findByPkCachedInternal($id, $ttl)) {
                 $result[] = $row;
             }
         }
