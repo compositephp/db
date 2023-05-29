@@ -242,4 +242,20 @@ final class AbstractCachedTableTest extends BaseTableTest
         $actual = $reflectionMethod->invoke($table, $entity);
         $this->assertEquals($expected, $actual);
     }
+
+    public function test_findMulti(): void
+    {
+        $table = new Tables\TestAutoincrementCachedTable($this->getCache());
+        $e1 = new Entities\TestAutoincrementEntity('John');
+        $e2 = new Entities\TestAutoincrementEntity('Constantine');
+
+        [$e1, $e2] = $table->saveMany([$e1, $e2]);
+
+        $multi1 = $table->findMulti([$e1->id]);
+        $this->assertEquals($e1, $multi1[0]);
+
+        $multi2 = $table->findMulti([$e1->id, $e2->id]);
+        $this->assertEquals($e1, $multi2[0]);
+        $this->assertEquals($e2, $multi2[1]);
+    }
 }

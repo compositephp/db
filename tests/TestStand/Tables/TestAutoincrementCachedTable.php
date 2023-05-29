@@ -72,6 +72,14 @@ class TestAutoincrementCachedTable extends AbstractCachedTable implements IAutoi
         );
     }
 
+    /**
+     * @return TestAutoincrementEntity[]
+     */
+    public function findMulti(array $ids): array
+    {
+        return $this->createEntities($this->findMultiCachedInternal($ids));
+    }
+
     public function truncate(): void
     {
         $this->getConnection()->executeStatement("DELETE FROM {$this->getTableName()} WHERE 1");
