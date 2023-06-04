@@ -1,4 +1,7 @@
 # What is Composite DB
+[![Latest Stable Version](https://poser.pugx.org/compositephp/db/v/stable)](https://packagist.org/packages/compositephp/db)
+[![Build Status](https://github.com/compositephp/db/actions/workflows/main.yml/badge.svg)](https://github.com/compositephp/db/actions)
+[![Codecov](https://codecov.io/gh/compositephp/db/branch/master/graph/badge.svg)](https://codecov.io/gh/compositephp/db/)
 
 Composite DB is lightweight and fast PHP ORM, DataMapper and Table Gateway which allows you to represent your SQL tables 
 scheme in OOP style using full power of PHP 8.1+ class syntax. 
