@@ -188,6 +188,58 @@ abstract class AbstractTable
     }
 
     /**
+     * @param array<int|string|array<string,mixed>> $pkList
+     * @return array
+     * @throws DbException
+     * @throws EntityException
+     * @throws \Doctrine\DBAL\Exception
+     */
+    protected function findMultiInternal(array $pkList): array
+    {
+        if (!$pkList) {
+            return [];
+        }
+        /** @var class-string<AbstractEntity> $class */
+        $class = $this->config->entityClass;
+
+        $pkColumns = [];
+        foreach ($this->config->primaryKeys as $primaryKeyName) {
+            $pkColumns[$primaryKeyName] = $class::schema()->getColumn($primaryKeyName);
+        }
+        if (count($pkColumns) === 1) {
+            if (!array_is_list($pkList)) {
+                throw new DbException('Input argument $pkList must be list');
+            }
+            /** @var \Composite\Entity\Columns\AbstractColumn $pkColumn */
+            $pkColumn = reset($pkColumns);
+            $preparedPkValues = array_map(fn ($pk) => $pkColumn->uncast($pk), $pkList);
+            $query = $this->select();
+            $this->buildWhere($query, [$pkColumn->name => $preparedPkValues]);
+        } else {
+            $query = $this->select();
+            $expressions = [];
+            foreach ($pkList as $i => $pkArray) {
+                if (!is_array($pkArray) || array_is_list($pkArray)) {
+                    throw new DbException('For tables with composite keys, input array must consist associative arrays');
+                }
+                $pkOrExpr = [];
+                foreach ($pkArray as $pkName => $pkValue) {
+                    if (is_string($pkName) && isset($pkColumns[$pkName])) {
+                        $preparedPkValue = $pkColumns[$pkName]->cast($pkValue);
+                        $pkOrExpr[] = $query->expr()->eq($pkName, ':' . $pkName . $i);
+                        $query->setParameter($pkName . $i, $preparedPkValue);
+                    }
+                }
+                if ($pkOrExpr) {
+                    $expressions[] = $query->expr()->and(...$pkOrExpr);
+                }
+            }
+            $query->where($query->expr()->or(...$expressions));
+        }
+        return $query->executeQuery()->fetchAllAssociative();
+    }
+
+    /**
      * @param array<string, mixed> $whereParams
      * @param array<string, string>|string $orderBy
      * @return array<string, mixed>
@@ -239,7 +291,7 @@ abstract class AbstractTable
             return null;
         }
         try {
-            /** @psalm-var class-string<AbstractEntity> $entityClass */
+            /** @var class-string<AbstractEntity> $entityClass */
             $entityClass = $this->config->entityClass;
             return $entityClass::fromArray($data);
         } catch (\Throwable) {
@@ -250,7 +302,7 @@ abstract class AbstractTable
     /**
      * @return AbstractEntity[]
      */
-    final protected function createEntities(mixed $data): array
+    final protected function createEntities(mixed $data, ?string $keyColumnName = null): array
     {
         if (!is_array($data)) {
             return [];
@@ -263,7 +315,11 @@ abstract class AbstractTable
                 if (!is_array($datum)) {
                     continue;
                 }
-                $result[] = $entityClass::fromArray($datum);
+                if ($keyColumnName && isset($datum[$keyColumnName])) {
+                    $result[$datum[$keyColumnName]] = $entityClass::fromArray($datum);
+                } else {
+                    $result[] = $entityClass::fromArray($datum);
+                }
             }
         } catch (\Throwable) {
             return [];
@@ -310,9 +366,13 @@ abstract class AbstractTable
         foreach ($where as $column => $value) {
             if ($value === null) {
                 $query->andWhere("$column IS NULL");
+            } elseif (is_array($value)) {
+                $query
+                    ->andWhere($query->expr()->in($column, $value));
             } else {
-                $query->andWhere("$column = :" . $column);
-                $query->setParameter($column, $value);
+                $query
+                    ->andWhere("$column = :" . $column)
+                    ->setParameter($column, $value);
             }
         }
     }

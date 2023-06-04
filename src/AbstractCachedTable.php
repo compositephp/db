@@ -26,13 +26,11 @@ abstract class AbstractCachedTable extends AbstractTable
      */
     public function save(AbstractEntity &$entity): void
     {
-        $this->getConnection()->transactional(function () use (&$entity) {
-            $cacheKeys = $this->collectCacheKeysByEntity($entity);
-            parent::save($entity);
-            if ($cacheKeys && !$this->cache->deleteMultiple(array_unique($cacheKeys))) {
-                throw new DbException('Failed to flush cache keys');
-            }
-        });
+        $cacheKeys = $this->collectCacheKeysByEntity($entity);
+        parent::save($entity);
+        if ($cacheKeys) {
+            $this->cache->deleteMultiple($cacheKeys);
+        }
     }
 
     /**
@@ -42,17 +40,20 @@ abstract class AbstractCachedTable extends AbstractTable
      */
     public function saveMany(array $entities): array
     {
-        return $this->getConnection()->transactional(function() use ($entities) {
-            $cacheKeys = [];
+        $cacheKeys = [];
+        foreach ($entities as $entity) {
+            $cacheKeys = array_merge($cacheKeys, $this->collectCacheKeysByEntity($entity));
+        }
+        $result = $this->getConnection()->transactional(function() use ($entities, $cacheKeys) {
             foreach ($entities as &$entity) {
-                $cacheKeys = array_merge($cacheKeys, $this->collectCacheKeysByEntity($entity));
                 parent::save($entity);
-            }
-            if ($cacheKeys && !$this->cache->deleteMultiple(array_unique($cacheKeys))) {
-                throw new DbException('Failed to flush cache keys');
             }
             return $entities;
         });
+        if ($cacheKeys) {
+            $this->cache->deleteMultiple(array_unique($cacheKeys));
+        }
+        return $result;
     }
 
     /**
@@ -60,13 +61,11 @@ abstract class AbstractCachedTable extends AbstractTable
      */
     public function delete(AbstractEntity &$entity): void
     {
-        $this->getConnection()->transactional(function () use (&$entity) {
-            $cacheKeys = $this->collectCacheKeysByEntity($entity);
-            parent::delete($entity);
-            if ($cacheKeys && !$this->cache->deleteMultiple(array_unique($cacheKeys))) {
-                throw new DbException('Failed to flush cache keys');
-            }
-        });
+        $cacheKeys = $this->collectCacheKeysByEntity($entity);
+        parent::delete($entity);
+        if ($cacheKeys) {
+            $this->cache->deleteMultiple($cacheKeys);
+        }
     }
 
     /**
@@ -75,17 +74,21 @@ abstract class AbstractCachedTable extends AbstractTable
      */
     public function deleteMany(array $entities): bool
     {
-        return (bool)$this->getConnection()->transactional(function() use ($entities) {
-            $cacheKeys = [];
+        $cacheKeys = [];
+        foreach ($entities as $entity) {
+            $cacheKeys = array_merge($cacheKeys, $this->collectCacheKeysByEntity($entity));
+            parent::delete($entity);
+        }
+        $result = (bool)$this->getConnection()->transactional(function() use ($entities) {
             foreach ($entities as $entity) {
-                $cacheKeys = array_merge($cacheKeys, $this->collectCacheKeysByEntity($entity));
                 parent::delete($entity);
-            }
-            if ($cacheKeys && !$this->cache->deleteMultiple(array_unique($cacheKeys))) {
-                throw new DbException('Failed to flush cache keys');
             }
             return true;
         });
+        if ($cacheKeys) {
+            $this->cache->deleteMultiple($cacheKeys);
+        }
+        return $result;
     }
 
     /**
@@ -98,7 +101,7 @@ abstract class AbstractCachedTable extends AbstractTable
         if (!$entity->isNew() || !$this->getConfig()->autoIncrementKey) {
             $keys[] = $this->getOneCacheKey($entity);
         }
-        return $keys;
+        return array_unique($keys);
     }
 
     /**
@@ -297,9 +300,6 @@ abstract class AbstractCachedTable extends AbstractTable
     {
         if (!$whereString) {
             return null;
-        }
-        if (!$whereParams) {
-            return $whereString;
         }
         return str_replace(
             array_map(fn (string $key): string => ':' . $key, array_keys($whereParams)),

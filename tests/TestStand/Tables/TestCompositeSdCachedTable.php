@@ -9,6 +9,12 @@ use Composite\Entity\AbstractEntity;
 
 class TestCompositeSdCachedTable extends \Composite\DB\AbstractCachedTable implements ICompositeTable
 {
+    public function __construct(\Psr\SimpleCache\CacheInterface $cache)
+    {
+        parent::__construct($cache);
+        (new TestCompositeSdTable())->init();
+    }
+
     protected function getConfig(): TableConfig
     {
         return TableConfig::fromEntitySchema(TestCompositeSdEntity::schema());

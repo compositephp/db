@@ -13,7 +13,6 @@ final class UpdatedAtTest extends \PHPUnit\Framework\TestCase
         $this->assertNull($entity->updated_at);
 
         $table = new TestUpdateAtTable();
-        $table->init();
         $table->save($entity);
 
         $this->assertNotNull($entity->updated_at);

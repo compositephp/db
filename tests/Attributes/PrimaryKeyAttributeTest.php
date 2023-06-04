@@ -8,7 +8,7 @@ use Composite\DB\Attributes;
 
 final class PrimaryKeyAttributeTest extends \PHPUnit\Framework\TestCase
 {
-    public function primaryKey_dataProvider(): array
+    public static function primaryKey_dataProvider(): array
     {
         return [
             [

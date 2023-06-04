@@ -39,8 +39,6 @@ final class OptimisticLockTest extends \PHPUnit\Framework\TestCase
         $olTable1 = new Tables\TestOptimisticLockTable();
         $olTable2 = new Tables\TestOptimisticLockTable();
 
-        $olTable1->init();
-
         $olTable1->save($olEntity1);
 
         $olEntity2 = $olTable2->findByPk($olEntity1->id);

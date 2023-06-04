@@ -3,20 +3,16 @@
 namespace Composite\DB\Tests\Table;
 
 use Composite\DB\AbstractTable;
+use Composite\DB\Exceptions\DbException;
 use Composite\DB\TableConfig;
+use Composite\DB\Tests\Helpers;
 use Composite\DB\Tests\TestStand\Tables;
 use Composite\DB\Tests\TestStand\Entities;
 use Composite\DB\Tests\TestStand\Interfaces\IAutoincrementTable;
 
-final class AutoIncrementTableTest extends BaseTableTest
+final class AutoIncrementTableTest extends \PHPUnit\Framework\TestCase
 {
-    public static function setUpBeforeClass(): void
-    {
-        (new Tables\TestAutoincrementTable())->init();
-        (new Tables\TestAutoincrementSdTable())->init();
-    }
-
-    public function crud_dataProvider(): array
+    public static function crud_dataProvider(): array
     {
         return [
             [
@@ -28,11 +24,11 @@ final class AutoIncrementTableTest extends BaseTableTest
                 Entities\TestAutoincrementSdEntity::class,
             ],
             [
-                new Tables\TestAutoincrementCachedTable(self::getCache()),
+                new Tables\TestAutoincrementCachedTable(Helpers\CacheHelper::getCache()),
                 Entities\TestAutoincrementEntity::class,
             ],
             [
-                new Tables\TestAutoincrementSdCachedTable(self::getCache()),
+                new Tables\TestAutoincrementSdCachedTable(Helpers\CacheHelper::getCache()),
                 Entities\TestAutoincrementSdEntity::class,
             ],
         ];
@@ -48,7 +44,7 @@ final class AutoIncrementTableTest extends BaseTableTest
         $tableConfig = TableConfig::fromEntitySchema($class::schema());
 
         $entity = new $class(
-            name: $this->getUniqueName(),
+            name: Helpers\StringHelper::getUniqueName(),
             is_test: true,
         );
         $this->assertEntityNotExists($table, PHP_INT_MAX, uniqid());
@@ -75,8 +71,8 @@ final class AutoIncrementTableTest extends BaseTableTest
             $this->assertEntityNotExists($table, $entity->id, $entity->name);
         }
 
-        $e1 = new $class($this->getUniqueName());
-        $e2 = new $class($this->getUniqueName());
+        $e1 = new $class(Helpers\StringHelper::getUniqueName());
+        $e2 = new $class(Helpers\StringHelper::getUniqueName());
 
         [$e1, $e2] = $table->saveMany([$e1, $e2]);
         $this->assertEntityExists($table, $e1);
@@ -102,6 +98,31 @@ final class AutoIncrementTableTest extends BaseTableTest
             $this->assertEntityNotExists($table, $e1->id, $e1->name);
             $this->assertEntityNotExists($table, $e2->id, $e2->name);
         }
+    }
+
+    public function test_getMulti(): void
+    {
+        $table = new Tables\TestAutoincrementTable();
+
+        $e1 = new Entities\TestAutoincrementEntity('name1');
+        $e2 = new Entities\TestAutoincrementEntity('name2');
+        $e3 = new Entities\TestAutoincrementEntity('name3');
+
+        [$e1, $e2, $e3] = $table->saveMany([$e1, $e2, $e3]);
+
+        $multiResult = $table->findMulti([$e1->id, $e2->id, $e3->id]);
+        $this->assertEquals($e1, $multiResult[$e1->id]);
+        $this->assertEquals($e2, $multiResult[$e2->id]);
+        $this->assertEquals($e3, $multiResult[$e3->id]);
+
+        $this->assertEmpty($table->findMulti([]));
+    }
+
+    public function test_illegalGetMulti(): void
+    {
+        $table = new Tables\TestAutoincrementTable();
+        $this->expectException(DbException::class);
+        $table->findMulti(['a' => 1]);
     }
 
     private function assertEntityExists(IAutoincrementTable $table, Entities\TestAutoincrementEntity $entity): void

@@ -4,15 +4,17 @@ namespace Composite\DB\Tests\Table;
 
 use Composite\DB\AbstractCachedTable;
 use Composite\DB\AbstractTable;
+use Composite\DB\Exceptions\DbException;
 use Composite\DB\Tests\TestStand\Entities;
 use Composite\DB\Tests\TestStand\Tables;
 use Composite\Entity\AbstractEntity;
+use Composite\DB\Tests\Helpers;
 
-final class AbstractCachedTableTest extends BaseTableTest
+final class AbstractCachedTableTest extends \PHPUnit\Framework\TestCase
 {
-    public function getOneCacheKey_dataProvider(): array
+    public static function getOneCacheKey_dataProvider(): array
     {
-        $cache = self::getCache();
+        $cache = Helpers\CacheHelper::getCache();
         return [
             [
                 new Tables\TestAutoincrementCachedTable($cache),
@@ -51,7 +53,7 @@ final class AbstractCachedTableTest extends BaseTableTest
     }
 
 
-    public function getCountCacheKey_dataProvider(): array
+    public static function getCountCacheKey_dataProvider(): array
     {
         return [
             [
@@ -87,13 +89,13 @@ final class AbstractCachedTableTest extends BaseTableTest
      */
     public function test_getCountCacheKey(string $whereString, array $whereParams, string $expected): void
     {
-        $table = new Tables\TestAutoincrementCachedTable(self::getCache());
+        $table = new Tables\TestAutoincrementCachedTable(Helpers\CacheHelper::getCache());
         $reflectionMethod = new \ReflectionMethod($table, 'getCountCacheKey');
         $actual = $reflectionMethod->invoke($table, $whereString, $whereParams);
         $this->assertEquals($expected, $actual);
     }
 
-    public function getListCacheKey_dataProvider(): array
+    public static function getListCacheKey_dataProvider(): array
     {
         return [
             [
@@ -146,14 +148,14 @@ final class AbstractCachedTableTest extends BaseTableTest
      */
     public function test_getListCacheKey(string $whereString, array $whereArray, array $orderBy, ?int $limit, string $expected): void
     {
-        $table = new Tables\TestAutoincrementCachedTable(self::getCache());
+        $table = new Tables\TestAutoincrementCachedTable(Helpers\CacheHelper::getCache());
         $reflectionMethod = new \ReflectionMethod($table, 'getListCacheKey');
         $actual = $reflectionMethod->invoke($table, $whereString, $whereArray, $orderBy, $limit);
         $this->assertEquals($expected, $actual);
     }
 
 
-    public function getCustomCacheKey_dataProvider(): array
+    public static function getCustomCacheKey_dataProvider(): array
     {
         return [
             [
@@ -184,18 +186,18 @@ final class AbstractCachedTableTest extends BaseTableTest
      */
     public function test_getCustomCacheKey(array $parts, string $expected): void
     {
-        $table = new Tables\TestAutoincrementCachedTable(self::getCache());
+        $table = new Tables\TestAutoincrementCachedTable(Helpers\CacheHelper::getCache());
         $reflectionMethod = new \ReflectionMethod($table, 'buildCacheKey');
         $actual = $reflectionMethod->invoke($table, ...$parts);
         $this->assertEquals($expected, $actual);
     }
 
-    public function collectCacheKeysByEntity_dataProvider(): array
+    public static function collectCacheKeysByEntity_dataProvider(): array
     {
         return [
             [
                 new Entities\TestAutoincrementEntity(name: 'foo'),
-                new Tables\TestAutoincrementCachedTable(self::getCache()),
+                new Tables\TestAutoincrementCachedTable(Helpers\CacheHelper::getCache()),
                 [
                     'sqlite.TestAutoincrement.v1.o.name_foo',
                     'sqlite.TestAutoincrement.v1.l.name_eq_foo',
@@ -204,7 +206,7 @@ final class AbstractCachedTableTest extends BaseTableTest
             ],
             [
                 Entities\TestAutoincrementEntity::fromArray(['id' => 123, 'name' => 'bar']),
-                new Tables\TestAutoincrementCachedTable(self::getCache()),
+                new Tables\TestAutoincrementCachedTable(Helpers\CacheHelper::getCache()),
                 [
                     'sqlite.TestAutoincrement.v1.o.name_bar',
                     'sqlite.TestAutoincrement.v1.l.name_eq_bar',
@@ -214,7 +216,7 @@ final class AbstractCachedTableTest extends BaseTableTest
             ],
             [
                 new Entities\TestUniqueEntity(id: '123abc', name: 'foo'),
-                new Tables\TestUniqueCachedTable(self::getCache()),
+                new Tables\TestUniqueCachedTable(Helpers\CacheHelper::getCache()),
                 [
                     'sqlite.TestUnique.v1.l.name_eq_foo',
                     'sqlite.TestUnique.v1.c.name_eq_foo',
@@ -223,7 +225,7 @@ final class AbstractCachedTableTest extends BaseTableTest
             ],
             [
                 Entities\TestUniqueEntity::fromArray(['id' => '456def', 'name' => 'bar']),
-                new Tables\TestUniqueCachedTable(self::getCache()),
+                new Tables\TestUniqueCachedTable(Helpers\CacheHelper::getCache()),
                 [
                     'sqlite.TestUnique.v1.l.name_eq_bar',
                     'sqlite.TestUnique.v1.c.name_eq_bar',
@@ -245,9 +247,7 @@ final class AbstractCachedTableTest extends BaseTableTest
 
     public function test_findMulti(): void
     {
-        (new Tables\TestAutoincrementTable())->init();
-
-        $table = new Tables\TestAutoincrementCachedTable($this->getCache());
+        $table = new Tables\TestAutoincrementCachedTable(Helpers\CacheHelper::getCache());
         $e1 = new Entities\TestAutoincrementEntity('John');
         $e2 = new Entities\TestAutoincrementEntity('Constantine');
 

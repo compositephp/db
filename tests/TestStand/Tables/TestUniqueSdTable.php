@@ -7,6 +7,12 @@ use Composite\DB\Tests\TestStand\Entities\TestUniqueSdEntity;
 
 class TestUniqueSdTable extends TestUniqueTable
 {
+    public function __construct()
+    {
+        parent::__construct();
+        $this->init();
+    }
+
     protected function getConfig(): TableConfig
     {
         return TableConfig::fromEntitySchema(TestUniqueSdEntity::schema());

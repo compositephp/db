@@ -7,6 +7,12 @@ use Composite\DB\Tests\TestStand\Entities\TestAutoincrementSdEntity;
 
 class TestAutoincrementSdTable extends TestAutoincrementTable
 {
+    public function __construct()
+    {
+        parent::__construct();
+        $this->init();
+    }
+
     protected function getConfig(): TableConfig
     {
         return TableConfig::fromEntitySchema(TestAutoincrementSdEntity::schema());

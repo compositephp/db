@@ -70,10 +70,13 @@ class CombinedTransaction
                 if (!$connection->commit()) {
                     throw new Exceptions\DbException("Could not commit transaction for database `$connectionName`");
                 }
+            // I have no idea how to simulate failed commit
+            // @codeCoverageIgnoreStart
             } catch (\Throwable $e) {
                 $this->rollback();
                 throw new Exceptions\DbException($e->getMessage(), 500, $e);
             }
+            // @codeCoverageIgnoreEnd
         }
         $this->finish();
     }
@@ -82,23 +85,17 @@ class CombinedTransaction
      * Pessimistic lock
      * @param string[] $keyParts
      * @throws DbException
+     * @throws InvalidArgumentException
      */
     public function lock(CacheInterface $cache, array $keyParts, int $duration = 10): void
     {
         $this->cache = $cache;
-        $this->lockKey = implode('.', array_merge(['composite', 'lock'], $keyParts));
-        if (strlen($this->lockKey) > 64) {
-            $this->lockKey = sha1($this->lockKey);
+        $this->lockKey = $this->buildLockKey($keyParts);
+        if ($this->cache->get($this->lockKey)) {
+            throw new DbException("Failed to get lock `{$this->lockKey}`");
         }
-        try {
-            if ($this->cache->get($this->lockKey)) {
-                throw new DbException("Failed to get lock `{$this->lockKey}`");
-            }
-            if (!$this->cache->set($this->lockKey, 1, $duration)) {
-                throw new DbException("Failed to save lock `{$this->lockKey}`");
-            }
-        } catch (InvalidArgumentException) {
-            throw new DbException("Lock key is invalid `{$this->lockKey}`");
+        if (!$this->cache->set($this->lockKey, 1, $duration)) {
+            throw new DbException("Failed to save lock `{$this->lockKey}`");
         }
     }
 
@@ -107,9 +104,21 @@ class CombinedTransaction
         if (!$this->cache || !$this->lockKey) {
             return;
         }
-        try {
-            $this->cache->delete($this->lockKey);
-        } catch (InvalidArgumentException) {}
+        $this->cache->delete($this->lockKey);
+    }
+
+    /**
+     * @param string[] $keyParts
+     * @return string
+     */
+    private function buildLockKey(array $keyParts): string
+    {
+        $keyParts = array_merge(['composite', 'lock'], $keyParts);
+        $result = implode('.', $keyParts);
+        if (strlen($result) > 64) {
+            $result = sha1($result);
+        }
+        return $result;
     }
 
     private function finish(): void

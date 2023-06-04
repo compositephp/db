@@ -10,6 +10,12 @@ use Composite\Entity\AbstractEntity;
 
 class TestAutoincrementCachedTable extends AbstractCachedTable implements IAutoincrementTable
 {
+    public function __construct(\Psr\SimpleCache\CacheInterface $cache)
+    {
+        parent::__construct($cache);
+        (new TestAutoincrementTable)->init();
+    }
+
     protected function getConfig(): TableConfig
     {
         return TableConfig::fromEntitySchema(TestAutoincrementEntity::schema());

@@ -9,6 +9,12 @@ use Composite\DB\Tests\TestStand\Interfaces\IAutoincrementTable;
 
 class TestAutoincrementTable extends AbstractTable implements IAutoincrementTable
 {
+    public function __construct()
+    {
+        parent::__construct();
+        $this->init();
+    }
+
     protected function getConfig(): TableConfig
     {
         return TableConfig::fromEntitySchema(TestAutoincrementEntity::schema());
@@ -54,6 +60,16 @@ class TestAutoincrementTable extends AbstractTable implements IAutoincrementTabl
             'name = :name',
             ['name' => $name]
         );
+    }
+
+    /**
+     * @param int[] $ids
+     * @return TestAutoincrementEntity[]
+     * @throws \Composite\DB\Exceptions\DbException
+     */
+    public function findMulti(array $ids): array
+    {
+        return $this->createEntities($this->findMultiInternal($ids), 'id');
     }
 
     public function init(): bool

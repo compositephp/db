@@ -7,6 +7,12 @@ use Composite\DB\Tests\TestStand\Entities\TestCompositeSdEntity;
 
 class TestCompositeSdTable extends TestCompositeTable
 {
+    public function __construct()
+    {
+        parent::__construct();
+        $this->init();
+    }
+
     protected function getConfig(): TableConfig
     {
         return TableConfig::fromEntitySchema(TestCompositeSdEntity::schema());

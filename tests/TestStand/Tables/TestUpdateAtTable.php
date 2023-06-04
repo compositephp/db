@@ -8,6 +8,12 @@ use Composite\DB\Tests\TestStand\Entities\TestUpdatedAtEntity;
 
 class TestUpdateAtTable extends AbstractTable
 {
+    public function __construct()
+    {
+        parent::__construct();
+        $this->init();
+    }
+
     protected function getConfig(): TableConfig
     {
         return TableConfig::fromEntitySchema(TestUpdatedAtEntity::schema());

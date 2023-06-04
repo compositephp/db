@@ -8,6 +8,12 @@ use Composite\DB\Tests\TestStand\Entities\TestOptimisticLockEntity;
 
 class TestOptimisticLockTable extends AbstractTable
 {
+    public function __construct()
+    {
+        parent::__construct();
+        $this->init();
+    }
+
     protected function getConfig(): TableConfig
     {
         return TableConfig::fromEntitySchema(TestOptimisticLockEntity::schema());

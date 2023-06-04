@@ -22,6 +22,14 @@ class TestCompositeTable extends \Composite\DB\AbstractTable implements IComposi
         parent::save($entity);
     }
 
+    public function delete(AbstractEntity|TestCompositeEntity &$entity): void
+    {
+        if ($entity->message === 'Exception') {
+            throw new \Exception('Test Exception');
+        }
+        parent::delete($entity);
+    }
+
     public function findOne(int $user_id, int $post_id): ?TestCompositeEntity
     {
         return $this->createEntity($this->findOneInternal(['user_id' => $user_id, 'post_id' => $post_id]));
@@ -44,6 +52,16 @@ class TestCompositeTable extends \Composite\DB\AbstractTable implements IComposi
             'user_id = :user_id',
             ['user_id' => $userId, 'deleted_at' => null],
         );
+    }
+
+    /**
+     * @param array $ids
+     * @return TestCompositeEntity[]
+     * @throws \Composite\DB\Exceptions\DbException
+     */
+    public function findMulti(array $ids): array
+    {
+        return $this->createEntities($this->findMultiInternal($ids), 'post_id');
     }
 
     public function init(): bool

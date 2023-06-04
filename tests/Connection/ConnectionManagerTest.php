@@ -14,7 +14,7 @@ final class ConnectionManagerTest extends \PHPUnit\Framework\TestCase
         $this->assertInstanceOf(Connection::class, $connection);
     }
 
-    public function invalidConfig_dataProvider(): array
+    public static function invalidConfig_dataProvider(): array
     {
         $testStandConfigsBaseDir = __DIR__ . '/../TestStand/configs/';
         return [
@@ -54,7 +54,7 @@ final class ConnectionManagerTest extends \PHPUnit\Framework\TestCase
 
         try {
             ConnectionManager::getConnection('db1');
-            $this->assertTrue(false);
+            $this->fail('This line should not be reached');
         } catch (DbException) {
             $this->assertTrue(true);
         } finally {

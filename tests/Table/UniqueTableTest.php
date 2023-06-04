@@ -4,19 +4,14 @@ namespace Composite\DB\Tests\Table;
 
 use Composite\DB\AbstractTable;
 use Composite\DB\TableConfig;
+use Composite\DB\Tests\Helpers;
 use Composite\DB\Tests\TestStand\Entities;
 use Composite\DB\Tests\TestStand\Tables;
 use Composite\DB\Tests\TestStand\Interfaces\IUniqueTable;
 
-final class UniqueTableTest extends BaseTableTest
+final class UniqueTableTest extends \PHPUnit\Framework\TestCase
 {
-    public static function setUpBeforeClass(): void
-    {
-        (new Tables\TestUniqueTable())->init();
-        (new Tables\TestUniqueSdTable())->init();
-    }
-
-    public function crud_dataProvider(): array
+    public static function crud_dataProvider(): array
     {
         return [
             [
@@ -28,11 +23,11 @@ final class UniqueTableTest extends BaseTableTest
                 Entities\TestUniqueSdEntity::class,
             ],
             [
-                new Tables\TestUniqueCachedTable(self::getCache()),
+                new Tables\TestUniqueCachedTable(Helpers\CacheHelper::getCache()),
                 Entities\TestUniqueEntity::class,
             ],
             [
-                new Tables\TestUniqueSdCachedTable(self::getCache()),
+                new Tables\TestUniqueSdCachedTable(Helpers\CacheHelper::getCache()),
                 Entities\TestUniqueSdEntity::class,
             ],
         ];
@@ -49,7 +44,7 @@ final class UniqueTableTest extends BaseTableTest
 
         $entity = new $class(
             id: uniqid(),
-            name: $this->getUniqueName(),
+            name: Helpers\StringHelper::getUniqueName(),
         );
         $this->assertEntityNotExists($table, $entity);
         $table->save($entity);

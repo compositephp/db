@@ -1,11 +1,11 @@
 <?php declare(strict_types=1);
 
-namespace Composite\DB\Tests\Table;
+namespace Composite\DB\Tests\Helpers;
 
 use Kodus\Cache\FileCache;
 use Psr\SimpleCache\CacheInterface;
 
-abstract class BaseTableTest extends \PHPUnit\Framework\TestCase
+class CacheHelper
 {
     private static ?CacheInterface $cache = null;
 

@@ -10,6 +10,12 @@ use Composite\Entity\AbstractEntity;
 
 class TestUniqueSdCachedTable extends AbstractCachedTable implements IUniqueTable
 {
+    public function __construct(\Psr\SimpleCache\CacheInterface $cache)
+    {
+        parent::__construct($cache);
+        (new TestUniqueSdTable())->init();
+    }
+
     protected function getConfig(): TableConfig
     {
         return TableConfig::fromEntitySchema(TestUniqueSdEntity::schema());

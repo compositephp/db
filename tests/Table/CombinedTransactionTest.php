@@ -6,16 +6,14 @@ use Composite\DB\CombinedTransaction;
 use Composite\DB\Exceptions\DbException;
 use Composite\DB\Tests\TestStand\Entities;
 use Composite\DB\Tests\TestStand\Tables;
+use Composite\DB\Tests\Helpers;
 
-final class CombinedTransactionTest extends BaseTableTest
+final class CombinedTransactionTest extends \PHPUnit\Framework\TestCase
 {
     public function test_transactionCommit(): void
     {
         $autoIncrementTable = new Tables\TestAutoincrementTable();
-        $autoIncrementTable->init();
-
         $compositeTable = new Tables\TestCompositeTable();
-        $compositeTable->init();
 
         $saveTransaction = new CombinedTransaction();
 
@@ -42,10 +40,7 @@ final class CombinedTransactionTest extends BaseTableTest
     public function test_transactionRollback(): void
     {
         $autoIncrementTable = new Tables\TestAutoincrementTable();
-        $autoIncrementTable->init();
-
         $compositeTable = new Tables\TestCompositeTable();
-        $compositeTable->init();
 
         $transaction = new CombinedTransaction();
 
@@ -61,13 +56,10 @@ final class CombinedTransactionTest extends BaseTableTest
         $this->assertNull($compositeTable->findOne($e2->user_id, $e2->post_id));
     }
 
-    public function test_transactionException(): void
+    public function test_failedSave(): void
     {
         $autoIncrementTable = new Tables\TestAutoincrementTable();
-        $autoIncrementTable->init();
-
         $compositeTable = new Tables\TestCompositeTable();
-        $compositeTable->init();
 
         $transaction = new CombinedTransaction();
 
@@ -78,18 +70,54 @@ final class CombinedTransactionTest extends BaseTableTest
         try {
             $transaction->save($compositeTable, $e2);
             $transaction->commit();
-            $this->assertFalse(true, 'This line should not be reached');
+            $this->fail('This line should not be reached');
         } catch (DbException) {}
 
         $this->assertNull($autoIncrementTable->findByPk($e1->id));
         $this->assertNull($compositeTable->findOne($e2->user_id, $e2->post_id));
     }
 
+    public function test_failedDelete(): void
+    {
+        $autoIncrementTable = new Tables\TestAutoincrementTable();
+        $compositeTable = new Tables\TestCompositeTable();
+
+        $aiEntity = new Entities\TestAutoincrementEntity(name: 'Foo');
+        $cEntity = new Entities\TestCompositeEntity(user_id: mt_rand(1, 1000), post_id: mt_rand(1, 1000), message: 'Bar');;
+
+        $autoIncrementTable->save($aiEntity);
+        $compositeTable->save($cEntity);
+
+        $transaction = new CombinedTransaction();
+        try {
+            $aiEntity->name = 'Foo1';
+            $cEntity->message = 'Exception';
+
+            $transaction->save($autoIncrementTable, $aiEntity);
+            $transaction->delete($compositeTable, $cEntity);
+
+            $transaction->commit();
+            $this->fail('This line should not be reached');
+        } catch (DbException) {}
+
+        $this->assertEquals('Foo', $autoIncrementTable->findByPk($aiEntity->id)->name);
+        $this->assertNotNull($compositeTable->findOne($cEntity->user_id, $cEntity->post_id));
+    }
+
+    public function test_lockFailed(): void
+    {
+        $cache = new Helpers\FalseCache();
+        $keyParts = [uniqid()];
+        $transaction = new CombinedTransaction();
+
+        $this->expectException(DbException::class);
+        $transaction->lock($cache, $keyParts);
+    }
+
     public function test_lock(): void
     {
-        $cache = self::getCache();
+        $cache = Helpers\CacheHelper::getCache();
         $table = new Tables\TestAutoincrementTable();
-        $table->init();
 
         $e1 = new Entities\TestAutoincrementEntity(name: 'Foo');
         $e2 = new Entities\TestAutoincrementEntity(name: 'Bar');
@@ -101,8 +129,10 @@ final class CombinedTransactionTest extends BaseTableTest
         $transaction2 = new CombinedTransaction();
         try {
             $transaction2->lock($cache, $keyParts);
-            $this->assertFalse(false, 'Lock should not be free');
-        } catch (DbException) {}
+            $this->fail('Lock should not be free');
+        } catch (DbException) {
+            $this->assertTrue(true);
+        }
 
         $transaction1->save($table, $e1);
         $transaction1->commit();
@@ -113,5 +143,26 @@ final class CombinedTransactionTest extends BaseTableTest
 
         $this->assertNotEmpty($table->findByPk($e1->id));
         $this->assertNotEmpty($table->findByPk($e2->id));
+    }
+
+    /**
+     * @dataProvider buildLockKey_dataProvider
+     */
+    public function test_buildLockKey($keyParts, $expectedResult)
+    {
+        $reflection = new \ReflectionClass(CombinedTransaction::class);
+        $object = new CombinedTransaction();
+        $result = $reflection->getMethod('buildLockKey')->invoke($object, $keyParts);
+        $this->assertEquals($expectedResult, $result);
+    }
+
+    public static function buildLockKey_dataProvider()
+    {
+        return [
+            'empty array' => [[], 'composite.lock'],
+            'one element' => [['element'], 'composite.lock.element'],
+            'exact length' => [[str_repeat('a', 49)], 'composite.lock.' . str_repeat('a', 49)],
+            'more than max length' => [[str_repeat('a', 55)], sha1('composite.lock.' . str_repeat('a', 55))],
+        ];
     }
 }

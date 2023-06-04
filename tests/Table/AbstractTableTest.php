@@ -8,9 +8,9 @@ use Composite\DB\Tests\TestStand\Tables;
 use Composite\Entity\AbstractEntity;
 use Composite\Entity\Exceptions\EntityException;
 
-final class AbstractTableTest extends BaseTableTest
+final class AbstractTableTest extends \PHPUnit\Framework\TestCase
 {
-    public function getPkCondition_dataProvider(): array
+    public static function getPkCondition_dataProvider(): array
     {
         return [
             [

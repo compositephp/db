@@ -9,6 +9,12 @@ use Composite\DB\Tests\TestStand\Interfaces\IUniqueTable;
 
 class TestUniqueTable extends AbstractTable implements IUniqueTable
 {
+    public function __construct()
+    {
+        parent::__construct();
+        $this->init();
+    }
+
     protected function getConfig(): TableConfig
     {
         return TableConfig::fromEntitySchema(TestUniqueEntity::schema());

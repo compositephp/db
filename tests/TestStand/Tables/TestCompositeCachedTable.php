@@ -9,6 +9,12 @@ use Composite\Entity\AbstractEntity;
 
 class TestCompositeCachedTable extends \Composite\DB\AbstractCachedTable implements ICompositeTable
 {
+    public function __construct(\Psr\SimpleCache\CacheInterface $cache)
+    {
+        parent::__construct($cache);
+        (new TestCompositeTable())->init();
+    }
+
     protected function getConfig(): TableConfig
     {
         return TableConfig::fromEntitySchema(TestCompositeEntity::schema());

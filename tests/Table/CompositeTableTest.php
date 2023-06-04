@@ -3,20 +3,16 @@
 namespace Composite\DB\Tests\Table;
 
 use Composite\DB\AbstractTable;
+use Composite\DB\Exceptions\DbException;
 use Composite\DB\TableConfig;
+use Composite\DB\Tests\Helpers;
 use Composite\DB\Tests\TestStand\Tables;
 use Composite\DB\Tests\TestStand\Entities;
 use Composite\DB\Tests\TestStand\Interfaces\ICompositeTable;
 
-final class CompositeTableTest extends BaseTableTest
+final class CompositeTableTest extends \PHPUnit\Framework\TestCase
 {
-    public static function setUpBeforeClass(): void
-    {
-        (new Tables\TestCompositeTable())->init();
-        (new Tables\TestCompositeSdTable())->init();
-    }
-
-    public function crud_dataProvider(): array
+    public static function crud_dataProvider(): array
     {
         return [
             [
@@ -28,11 +24,11 @@ final class CompositeTableTest extends BaseTableTest
                 Entities\TestCompositeSdEntity::class,
             ],
             [
-                new Tables\TestCompositeCachedTable(self::getCache()),
+                new Tables\TestCompositeCachedTable(Helpers\CacheHelper::getCache()),
                 Entities\TestCompositeEntity::class,
             ],
             [
-                new Tables\TestCompositeSdCachedTable(self::getCache()),
+                new Tables\TestCompositeSdCachedTable(Helpers\CacheHelper::getCache()),
                 Entities\TestCompositeSdEntity::class,
             ],
         ];
@@ -50,7 +46,7 @@ final class CompositeTableTest extends BaseTableTest
         $entity = new $class(
             user_id: mt_rand(1, 1000000),
             post_id: mt_rand(1, 1000000),
-            message: $this->getUniqueName(),
+            message: Helpers\StringHelper::getUniqueName(),
         );
         $this->assertEntityNotExists($table, $entity);
         $table->save($entity);
@@ -69,6 +65,48 @@ final class CompositeTableTest extends BaseTableTest
         } else {
             $this->assertEntityNotExists($table, $entity);
         }
+    }
+
+    public function test_getMulti(): void
+    {
+        $table = new Tables\TestCompositeTable();
+        $userId = mt_rand(1, 1000000);
+
+        $e1 = new Entities\TestCompositeEntity(
+            user_id: $userId,
+            post_id: mt_rand(1, 1000000),
+            message: Helpers\StringHelper::getUniqueName(),
+        );
+
+        $e2 = new Entities\TestCompositeEntity(
+            user_id: $userId,
+            post_id: mt_rand(1, 1000000),
+            message: Helpers\StringHelper::getUniqueName(),
+        );
+
+        $e3 = new Entities\TestCompositeEntity(
+            user_id: $userId,
+            post_id: mt_rand(1, 1000000),
+            message: Helpers\StringHelper::getUniqueName(),
+        );
+
+        [$e1, $e2, $e3] = $table->saveMany([$e1, $e2, $e3]);
+
+        $multiResult = $table->findMulti([
+            ['user_id' => $e1->user_id, 'post_id' => $e1->post_id],
+            ['user_id' => $e2->user_id, 'post_id' => $e2->post_id],
+            ['user_id' => $e3->user_id, 'post_id' => $e3->post_id],
+        ]);
+        $this->assertEquals($e1, $multiResult[$e1->post_id]);
+        $this->assertEquals($e2, $multiResult[$e2->post_id]);
+        $this->assertEquals($e3, $multiResult[$e3->post_id]);
+    }
+
+    public function test_illegalGetMulti(): void
+    {
+        $table = new Tables\TestCompositeTable();
+        $this->expectException(DbException::class);
+        $table->findMulti(['a']);
     }
 
     private function assertEntityExists(ICompositeTable $table, Entities\TestCompositeEntity $entity): void
