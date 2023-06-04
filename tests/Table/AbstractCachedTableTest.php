@@ -251,7 +251,8 @@ final class AbstractCachedTableTest extends \PHPUnit\Framework\TestCase
         $e1 = new Entities\TestAutoincrementEntity('John');
         $e2 = new Entities\TestAutoincrementEntity('Constantine');
 
-        [$e1, $e2] = $table->saveMany([$e1, $e2]);
+        $table->save($e1);
+        $table->save($e2);
 
         $multi1 = $table->findMulti([$e1->id]);
         $this->assertEquals($e1, $multi1[0]);

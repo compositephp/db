@@ -35,25 +35,23 @@ abstract class AbstractCachedTable extends AbstractTable
 
     /**
      * @param AbstractEntity[] $entities
-     * @return AbstractEntity[]
      * @throws \Throwable
      */
-    public function saveMany(array $entities): array
+    public function saveMany(array $entities): bool
     {
         $cacheKeys = [];
         foreach ($entities as $entity) {
             $cacheKeys = array_merge($cacheKeys, $this->collectCacheKeysByEntity($entity));
         }
-        $result = $this->getConnection()->transactional(function() use ($entities, $cacheKeys) {
+        $this->getConnection()->transactional(function() use ($entities, $cacheKeys) {
             foreach ($entities as &$entity) {
                 parent::save($entity);
             }
-            return $entities;
         });
         if ($cacheKeys) {
             $this->cache->deleteMultiple(array_unique($cacheKeys));
         }
-        return $result;
+        return true;
     }
 
     /**

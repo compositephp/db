@@ -108,10 +108,10 @@ abstract class AbstractTable
      * @param AbstractEntity[] $entities
      * @throws \Throwable
      */
-    public function saveMany(array $entities): array
+    public function saveMany(array $entities): bool
     {
-        return $this->getConnection()->transactional(function() use ($entities) {
-            foreach ($entities as &$entity) {
+        return (bool)$this->getConnection()->transactional(function() use ($entities) {
+            foreach ($entities as $entity) {
                 $this->save($entity);
             }
             return $entities;

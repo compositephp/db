@@ -65,6 +65,36 @@ final class CompositeTableTest extends \PHPUnit\Framework\TestCase
         } else {
             $this->assertEntityNotExists($table, $entity);
         }
+
+        $e1 = new $class(
+            user_id: mt_rand(1, 1000000),
+            post_id: mt_rand(1, 1000000),
+            message: Helpers\StringHelper::getUniqueName(),
+        );
+        $e2 = new $class(
+            user_id: mt_rand(1, 1000000),
+            post_id: mt_rand(1, 1000000),
+            message: Helpers\StringHelper::getUniqueName(),
+        );
+
+        $table->saveMany([$e1, $e2]);
+        $this->assertEntityExists($table, $e1);
+        $this->assertEntityExists($table, $e2);
+
+        $this->assertTrue($table->deleteMany([$e1, $e2]));
+
+        if ($tableConfig->hasSoftDelete()) {
+            /** @var Entities\TestCompositeSdEntity $deletedEntity1 */
+            $deletedEntity1 = $table->findOne(user_id: $e1->user_id, post_id: $e1->post_id);
+            $this->assertTrue($deletedEntity1->isDeleted());
+
+            /** @var Entities\TestCompositeSdEntity $deletedEntity2 */
+            $deletedEntity2 = $table->findOne(user_id: $e2->user_id, post_id: $e2->post_id);
+            $this->assertTrue($deletedEntity2->isDeleted());
+        } else {
+            $this->assertEntityNotExists($table, $e1);
+            $this->assertEntityNotExists($table, $e2);
+        }
     }
 
     public function test_getMulti(): void
@@ -90,7 +120,7 @@ final class CompositeTableTest extends \PHPUnit\Framework\TestCase
             message: Helpers\StringHelper::getUniqueName(),
         );
 
-        [$e1, $e2, $e3] = $table->saveMany([$e1, $e2, $e3]);
+        $table->saveMany([$e1, $e2, $e3]);
 
         $multiResult = $table->findMulti([
             ['user_id' => $e1->user_id, 'post_id' => $e1->post_id],

@@ -74,7 +74,8 @@ final class AutoIncrementTableTest extends \PHPUnit\Framework\TestCase
         $e1 = new $class(Helpers\StringHelper::getUniqueName());
         $e2 = new $class(Helpers\StringHelper::getUniqueName());
 
-        [$e1, $e2] = $table->saveMany([$e1, $e2]);
+        $table->save($e1);
+        $table->save($e2);
         $this->assertEntityExists($table, $e1);
         $this->assertEntityExists($table, $e2);
 
@@ -108,7 +109,9 @@ final class AutoIncrementTableTest extends \PHPUnit\Framework\TestCase
         $e2 = new Entities\TestAutoincrementEntity('name2');
         $e3 = new Entities\TestAutoincrementEntity('name3');
 
-        [$e1, $e2, $e3] = $table->saveMany([$e1, $e2, $e3]);
+        $table->save($e1);
+        $table->save($e2);
+        $table->save($e3);
 
         $multiResult = $table->findMulti([$e1->id, $e2->id, $e3->id]);
         $this->assertEquals($e1, $multiResult[$e1->id]);
