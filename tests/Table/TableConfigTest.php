@@ -27,7 +27,7 @@ final class TableConfigTest extends \PHPUnit\Framework\TestCase
                     private \DateTimeImmutable $dt = new \DateTimeImmutable(),
                 ) {}
         };
-        $schema = Schema::build($class::class);
+        $schema = new Schema($class::class);
         $tableConfig = TableConfig::fromEntitySchema($schema);
         $this->assertNotEmpty($tableConfig->connectionName);
         $this->assertNotEmpty($tableConfig->tableName);
@@ -47,7 +47,7 @@ final class TableConfigTest extends \PHPUnit\Framework\TestCase
                 public string $str = 'abc',
             ) {}
         };
-        $schema = Schema::build($class::class);
+        $schema = new Schema($class::class);
         $this->expectException(EntityException::class);
         TableConfig::fromEntitySchema($schema);
     }
