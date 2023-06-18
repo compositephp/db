@@ -9,6 +9,7 @@ use Composite\Entity\Schema;
 
 class TableConfig
 {
+    /** @var array<class-string, true> */
     private readonly array $entityTraits;
 
     /**

@@ -4,33 +4,47 @@ namespace Composite\DB\MultiQuery;
 
 class MultiInsert
 {
-    public readonly string $sql;
-    public readonly array $parameters;
+    private string $sql = '';
+    /** @var array<string, mixed> */
+    private array $parameters = [];
 
+    /**
+     * @param string $tableName
+     * @param list<array<string, mixed>> $rows
+     */
     public function __construct(string $tableName, array $rows) {
         if (!$rows) {
-            $this->sql = '';
-            $this->parameters = [];
             return;
         }
         $firstRow = reset($rows);
-        $columnNames = array_map(fn ($columnName) => "`$columnName`", array_keys($firstRow));
-        $sql = "INSERT INTO `$tableName` (" . implode(', ', $columnNames) . ") VALUES ";
-        $valuesSql = $parameters = [];
+        $columnNames = array_map(fn($columnName) => "`$columnName`", array_keys($firstRow));
+        $this->sql = "INSERT INTO `$tableName` (" . implode(', ', $columnNames) . ") VALUES ";
+        $valuesSql = [];
 
         $index = 0;
         foreach ($rows as $row) {
             $valuePlaceholder = [];
             foreach ($row as $column => $value) {
                 $valuePlaceholder[] = ":$column$index";
-                $parameters["$column$index"] = $value;
+                $this->parameters["$column$index"] = $value;
             }
             $valuesSql[] = '(' . implode(', ', $valuePlaceholder) . ')';
             $index++;
         }
 
-        $sql .= implode(', ', $valuesSql);
-        $this->sql = $sql . ';';
-        $this->parameters = $parameters;
+        $this->sql .= implode(', ', $valuesSql) . ';';
+    }
+
+    public function getSql(): string
+    {
+        return $this->sql;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getParameters(): array
+    {
+        return $this->parameters;
     }
 }

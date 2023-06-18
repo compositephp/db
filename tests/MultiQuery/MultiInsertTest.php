@@ -13,8 +13,8 @@ class MultiInsertTest extends \PHPUnit\Framework\TestCase
     {
         $multiInserter = new MultiInsert($tableName, $rows);
 
-        $this->assertEquals($expectedSql, $multiInserter->sql);
-        $this->assertEquals($expectedParameters, $multiInserter->parameters);
+        $this->assertEquals($expectedSql, $multiInserter->getSql());
+        $this->assertEquals($expectedParameters, $multiInserter->getParameters());
     }
 
     public static function multiInsertQuery_dataProvider()

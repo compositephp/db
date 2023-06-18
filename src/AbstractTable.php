@@ -132,9 +132,9 @@ abstract class AbstractTable
                         tableName: $this->getTableName(),
                         rows: $chunk,
                     );
-                    if ($multiInsert->sql) {
-                        $stmt = $this->getConnection()->prepare($multiInsert->sql);
-                        $stmt->executeQuery($multiInsert->parameters);
+                    if ($multiInsert->getSql()) {
+                        $stmt = $this->getConnection()->prepare($multiInsert->getSql());
+                        $stmt->executeQuery($multiInsert->getParameters());
                     }
                 }
             }
@@ -223,7 +223,7 @@ abstract class AbstractTable
 
     /**
      * @param array<int|string|array<string,mixed>> $pkList
-     * @return array
+     * @return array<array<string, mixed>>
      * @throws DbException
      * @throws EntityException
      * @throws \Doctrine\DBAL\Exception
@@ -253,7 +253,7 @@ abstract class AbstractTable
             $query = $this->select();
             $expressions = [];
             foreach ($pkList as $i => $pkArray) {
-                if (!is_array($pkArray) || array_is_list($pkArray)) {
+                if (!is_array($pkArray)) {
                     throw new DbException('For tables with composite keys, input array must consist associative arrays');
                 }
                 $pkOrExpr = [];
@@ -276,7 +276,7 @@ abstract class AbstractTable
     /**
      * @param array<string, mixed> $whereParams
      * @param array<string, string>|string $orderBy
-     * @return array<string, mixed>
+     * @return list<array<string,mixed>>
      * @throws \Doctrine\DBAL\Exception
      */
     protected function findAllInternal(
