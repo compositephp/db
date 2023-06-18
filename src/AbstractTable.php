@@ -2,6 +2,7 @@
 
 namespace Composite\DB;
 
+use Composite\DB\MultiQuery\MultiInsert;
 use Composite\Entity\Helpers\DateTimeHelper;
 use Composite\Entity\AbstractEntity;
 use Composite\DB\Exceptions\DbException;
@@ -47,9 +48,8 @@ abstract class AbstractTable
         $this->config->checkEntity($entity);
         if ($entity->isNew()) {
             $connection = $this->getConnection();
-            if ($this->config->hasUpdatedAt() && property_exists($entity, 'updated_at') && $entity->updated_at === null) {
-                $entity->updated_at = new \DateTimeImmutable();
-            }
+            $this->checkUpdatedAt($entity);
+
             $insertData = $this->formatData($entity->toArray());
             $this->getConnection()->insert($this->getTableName(), $insertData);
 
@@ -108,18 +108,46 @@ abstract class AbstractTable
      * @param AbstractEntity[] $entities
      * @throws \Throwable
      */
-    public function saveMany(array $entities): bool
+    public function saveMany(array $entities): void
     {
-        return (bool)$this->getConnection()->transactional(function() use ($entities) {
+        $rowsToInsert = [];
+        foreach ($entities as $i => $entity) {
+            if ($entity->isNew()) {
+                $this->config->checkEntity($entity);
+                $this->checkUpdatedAt($entity);
+                $rowsToInsert[] = $this->formatData($entity->toArray());
+                unset($entities[$i]);
+            }
+        }
+        $connection = $this->getConnection();
+        $connection->beginTransaction();
+        try {
             foreach ($entities as $entity) {
                 $this->save($entity);
             }
-            return $entities;
-        });
+            if ($rowsToInsert) {
+                $chunks = array_chunk($rowsToInsert, 1000);
+                foreach ($chunks as $chunk) {
+                    $multiInsert = new MultiInsert(
+                        tableName: $this->getTableName(),
+                        rows: $chunk,
+                    );
+                    if ($multiInsert->sql) {
+                        $stmt = $this->getConnection()->prepare($multiInsert->sql);
+                        $stmt->executeQuery($multiInsert->parameters);
+                    }
+                }
+            }
+            $connection->commit();
+        } catch (\Throwable $e) {
+            $connection->rollBack();
+            throw $e;
+        }
     }
 
     /**
-     * @throws EntityException
+     * @param AbstractEntity $entity
+     * @throws \Throwable
      */
     public function delete(AbstractEntity &$entity): void
     {
@@ -137,15 +165,21 @@ abstract class AbstractTable
 
     /**
      * @param AbstractEntity[] $entities
+     * @throws \Throwable
      */
-    public function deleteMany(array $entities): bool
+    public function deleteMany(array $entities): void
     {
-        return (bool)$this->getConnection()->transactional(function() use ($entities) {
+        $connection = $this->getConnection();
+        $connection->beginTransaction();
+        try {
             foreach ($entities as $entity) {
                 $this->delete($entity);
             }
-            return true;
-        });
+            $connection->commit();
+        } catch (\Throwable $e) {
+            $connection->rollBack();
+            throw $e;
+        }
     }
 
     /**
@@ -374,6 +408,13 @@ abstract class AbstractTable
                     ->andWhere("$column = :" . $column)
                     ->setParameter($column, $value);
             }
+        }
+    }
+
+    private function checkUpdatedAt(AbstractEntity $entity): void
+    {
+        if ($this->config->hasUpdatedAt() && property_exists($entity, 'updated_at') && $entity->updated_at === null) {
+            $entity->updated_at = new \DateTimeImmutable();
         }
     }
 

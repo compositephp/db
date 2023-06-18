@@ -78,10 +78,25 @@ final class CompositeTableTest extends \PHPUnit\Framework\TestCase
         );
 
         $table->saveMany([$e1, $e2]);
+        $e1->resetChangedColumns();
+        $e2->resetChangedColumns();
+
         $this->assertEntityExists($table, $e1);
         $this->assertEntityExists($table, $e2);
 
-        $this->assertTrue($table->deleteMany([$e1, $e2]));
+        if ($tableConfig->hasSoftDelete()) {
+            $e1->message = 'Exception';
+            $exceptionThrown = false;
+            try {
+                $table->deleteMany([$e1, $e2]);
+            } catch (\Exception) {
+                $exceptionThrown = true;
+            }
+            $this->assertTrue($exceptionThrown);
+            $e1->message = Helpers\StringHelper::getUniqueName();
+        }
+
+        $table->deleteMany([$e1, $e2]);
 
         if ($tableConfig->hasSoftDelete()) {
             /** @var Entities\TestCompositeSdEntity $deletedEntity1 */
@@ -121,6 +136,10 @@ final class CompositeTableTest extends \PHPUnit\Framework\TestCase
         );
 
         $table->saveMany([$e1, $e2, $e3]);
+
+        $e1->resetChangedColumns();
+        $e2->resetChangedColumns();
+        $e3->resetChangedColumns();
 
         $multiResult = $table->findMulti([
             ['user_id' => $e1->user_id, 'post_id' => $e1->post_id],

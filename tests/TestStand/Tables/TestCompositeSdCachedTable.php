@@ -15,6 +15,14 @@ class TestCompositeSdCachedTable extends \Composite\DB\AbstractCachedTable imple
         (new TestCompositeSdTable())->init();
     }
 
+    public function save(AbstractEntity|TestCompositeSdEntity &$entity): void
+    {
+        if ($entity->message === 'Exception') {
+            throw new \Exception('Test Exception');
+        }
+        parent::save($entity);
+    }
+
     protected function getConfig(): TableConfig
     {
         return TableConfig::fromEntitySchema(TestCompositeSdEntity::schema());

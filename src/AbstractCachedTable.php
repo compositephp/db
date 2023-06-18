@@ -37,21 +37,16 @@ abstract class AbstractCachedTable extends AbstractTable
      * @param AbstractEntity[] $entities
      * @throws \Throwable
      */
-    public function saveMany(array $entities): bool
+    public function saveMany(array $entities): void
     {
         $cacheKeys = [];
         foreach ($entities as $entity) {
             $cacheKeys = array_merge($cacheKeys, $this->collectCacheKeysByEntity($entity));
         }
-        $this->getConnection()->transactional(function() use ($entities, $cacheKeys) {
-            foreach ($entities as &$entity) {
-                parent::save($entity);
-            }
-        });
+        parent::saveMany($entities);
         if ($cacheKeys) {
             $this->cache->deleteMultiple(array_unique($cacheKeys));
         }
-        return true;
     }
 
     /**
@@ -70,23 +65,17 @@ abstract class AbstractCachedTable extends AbstractTable
      * @param AbstractEntity[] $entities
      * @throws \Throwable
      */
-    public function deleteMany(array $entities): bool
+    public function deleteMany(array $entities): void
     {
         $cacheKeys = [];
         foreach ($entities as $entity) {
             $cacheKeys = array_merge($cacheKeys, $this->collectCacheKeysByEntity($entity));
             parent::delete($entity);
         }
-        $result = (bool)$this->getConnection()->transactional(function() use ($entities) {
-            foreach ($entities as $entity) {
-                parent::delete($entity);
-            }
-            return true;
-        });
+        parent::deleteMany($entities);
         if ($cacheKeys) {
             $this->cache->deleteMultiple($cacheKeys);
         }
-        return $result;
     }
 
     /**

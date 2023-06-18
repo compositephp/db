@@ -6,6 +6,7 @@ use Composite\DB\AbstractTable;
 use Composite\DB\TableConfig;
 use Composite\DB\Tests\TestStand\Entities\TestUniqueEntity;
 use Composite\DB\Tests\TestStand\Interfaces\IUniqueTable;
+use Composite\Entity\AbstractEntity;
 
 class TestUniqueTable extends AbstractTable implements IUniqueTable
 {
@@ -13,6 +14,14 @@ class TestUniqueTable extends AbstractTable implements IUniqueTable
     {
         parent::__construct();
         $this->init();
+    }
+
+    public function save(AbstractEntity|TestUniqueEntity &$entity): void
+    {
+        if ($entity->name === 'Exception') {
+            throw new \Exception('Test Exception');
+        }
+        parent::save($entity);
     }
 
     protected function getConfig(): TableConfig

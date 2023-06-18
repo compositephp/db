@@ -65,6 +65,55 @@ final class UniqueTableTest extends \PHPUnit\Framework\TestCase
         }
     }
 
+    public function test_multiSave(): void
+    {
+        $e1 = new Entities\TestUniqueEntity(
+            id: uniqid(),
+            name: Helpers\StringHelper::getUniqueName(),
+        );
+        $e2 = new Entities\TestUniqueEntity(
+            id: uniqid(),
+            name: Helpers\StringHelper::getUniqueName(),
+        );
+        $e3 = new Entities\TestUniqueEntity(
+            id: uniqid(),
+            name: Helpers\StringHelper::getUniqueName(),
+        );
+        $e4 = new Entities\TestUniqueEntity(
+            id: uniqid(),
+            name: Helpers\StringHelper::getUniqueName(),
+        );
+        $table = new Tables\TestUniqueTable();
+        $table->saveMany([$e1, $e2]);
+
+        $this->assertEntityExists($table, $e1);
+        $this->assertEntityExists($table, $e2);
+
+        $e1->resetChangedColumns();
+        $e2->resetChangedColumns();
+
+        $e1->name = 'Exception';
+
+        $exceptionThrown = false;
+        try {
+            $table->saveMany([$e1, $e2, $e3, $e4]);
+        } catch (\Exception) {
+            $exceptionThrown = true;
+        }
+        $this->assertTrue($exceptionThrown);
+        $this->assertEntityNotExists($table, $e3);
+        $this->assertEntityNotExists($table, $e4);
+
+        $e1->name = 'NonException';
+
+        $table->saveMany([$e1, $e2, $e3, $e4]);
+
+        $this->assertEntityExists($table, $e1);
+        $this->assertEntityExists($table, $e2);
+        $this->assertEntityExists($table, $e3);
+        $this->assertEntityExists($table, $e4);
+    }
+
     private function assertEntityExists(IUniqueTable $table, Entities\TestUniqueEntity $entity): void
     {
         $this->assertNotNull($table->findByPk($entity->id));

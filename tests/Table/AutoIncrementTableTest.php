@@ -85,7 +85,7 @@ final class AutoIncrementTableTest extends \PHPUnit\Framework\TestCase
         $preLastEntity = $table->findRecent(1, 1);
         $this->assertEquals($e1, $preLastEntity[0]);
 
-        $this->assertTrue($table->deleteMany([$e1, $e2]));
+        $table->deleteMany([$e1, $e2]);
 
         if ($tableConfig->hasSoftDelete()) {
             /** @var Entities\TestAutoincrementSdEntity $deletedEntity1 */
