@@ -101,4 +101,48 @@ final class AbstractTableTest extends \PHPUnit\Framework\TestCase
         $empty = $table->buildEntities(['abc']);
         $this->assertEmpty($empty);
     }
+
+    /**
+     * @dataProvider buildWhere_dataProvider
+     */
+    public function test_buildWhere($where, $expectedSQL, $expectedParams)
+    {
+        $table = new Tables\TestStrictTable();
+
+        $selectReflection = new \ReflectionMethod($table, 'select');
+        $selectReflection->setAccessible(true);
+
+        $queryBuilder = $selectReflection->invoke($table);
+
+        $buildWhereReflection = new \ReflectionMethod($table, 'buildWhere');
+        $buildWhereReflection->setAccessible(true);
+
+        $buildWhereReflection->invokeArgs($table, [$queryBuilder, $where]);
+
+        $this->assertEquals($expectedSQL, $queryBuilder->getSQL());
+    }
+
+    public static function buildWhere_dataProvider(): array
+    {
+        return [
+            // Test when value is null
+            [
+                ['column1' => null],
+                'SELECT * FROM Strict WHERE column1 IS NULL',
+                []
+            ],
+            // Test when value is an array
+            [
+                ['column1' => [1, 2, 3]],
+                'SELECT * FROM Strict WHERE column1 IN (1, 2, 3)',
+                [1, 2, 3]
+            ],
+            // Test when value is a single value
+            [
+                ['column1' => 'value1'],
+                'SELECT * FROM Strict WHERE column1 = :column1',
+                ['value1']
+            ],
+        ];
+    }
 }

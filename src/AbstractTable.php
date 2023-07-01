@@ -3,6 +3,7 @@
 namespace Composite\DB;
 
 use Composite\DB\MultiQuery\MultiInsert;
+use Composite\DB\MultiQuery\MultiSelect;
 use Composite\Entity\Helpers\DateTimeHelper;
 use Composite\Entity\AbstractEntity;
 use Composite\DB\Exceptions\DbException;
@@ -225,7 +226,6 @@ abstract class AbstractTable
      * @param array<int|string|array<string,mixed>> $pkList
      * @return array<array<string, mixed>>
      * @throws DbException
-     * @throws EntityException
      * @throws \Doctrine\DBAL\Exception
      */
     protected function findMultiInternal(array $pkList): array
@@ -233,44 +233,8 @@ abstract class AbstractTable
         if (!$pkList) {
             return [];
         }
-        /** @var class-string<AbstractEntity> $class */
-        $class = $this->config->entityClass;
-
-        $pkColumns = [];
-        foreach ($this->config->primaryKeys as $primaryKeyName) {
-            $pkColumns[$primaryKeyName] = $class::schema()->getColumn($primaryKeyName);
-        }
-        if (count($pkColumns) === 1) {
-            if (!array_is_list($pkList)) {
-                throw new DbException('Input argument $pkList must be list');
-            }
-            /** @var \Composite\Entity\Columns\AbstractColumn $pkColumn */
-            $pkColumn = reset($pkColumns);
-            $preparedPkValues = array_map(fn ($pk) => $pkColumn->uncast($pk), $pkList);
-            $query = $this->select();
-            $this->buildWhere($query, [$pkColumn->name => $preparedPkValues]);
-        } else {
-            $query = $this->select();
-            $expressions = [];
-            foreach ($pkList as $i => $pkArray) {
-                if (!is_array($pkArray)) {
-                    throw new DbException('For tables with composite keys, input array must consist associative arrays');
-                }
-                $pkOrExpr = [];
-                foreach ($pkArray as $pkName => $pkValue) {
-                    if (is_string($pkName) && isset($pkColumns[$pkName])) {
-                        $preparedPkValue = $pkColumns[$pkName]->cast($pkValue);
-                        $pkOrExpr[] = $query->expr()->eq($pkName, ':' . $pkName . $i);
-                        $query->setParameter($pkName . $i, $preparedPkValue);
-                    }
-                }
-                if ($pkOrExpr) {
-                    $expressions[] = $query->expr()->and(...$pkOrExpr);
-                }
-            }
-            $query->where($query->expr()->or(...$expressions));
-        }
-        return $query->executeQuery()->fetchAllAssociative();
+        $multiSelect = new MultiSelect($this->getConnection(), $this->config, $pkList);
+        return $multiSelect->getQueryBuilder()->executeQuery()->fetchAllAssociative();
     }
 
     /**
@@ -395,7 +359,7 @@ abstract class AbstractTable
     /**
      * @param array<string, mixed> $where
      */
-    private function buildWhere(QueryBuilder $query, array $where): void
+    private function buildWhere(\Doctrine\DBAL\Query\QueryBuilder $query, array $where): void
     {
         foreach ($where as $column => $value) {
             if ($value === null) {
