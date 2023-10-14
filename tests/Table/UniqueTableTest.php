@@ -8,6 +8,7 @@ use Composite\DB\Tests\Helpers;
 use Composite\DB\Tests\TestStand\Entities;
 use Composite\DB\Tests\TestStand\Tables;
 use Composite\DB\Tests\TestStand\Interfaces\IUniqueTable;
+use Ramsey\Uuid\Uuid;
 
 final class UniqueTableTest extends \PHPUnit\Framework\TestCase
 {
@@ -43,7 +44,7 @@ final class UniqueTableTest extends \PHPUnit\Framework\TestCase
         $tableConfig = TableConfig::fromEntitySchema($class::schema());
 
         $entity = new $class(
-            id: uniqid(),
+            id: Uuid::uuid4(),
             name: Helpers\StringHelper::getUniqueName(),
         );
         $this->assertEntityNotExists($table, $entity);
@@ -68,19 +69,19 @@ final class UniqueTableTest extends \PHPUnit\Framework\TestCase
     public function test_multiSave(): void
     {
         $e1 = new Entities\TestUniqueEntity(
-            id: uniqid(),
+            id: Uuid::uuid4(),
             name: Helpers\StringHelper::getUniqueName(),
         );
         $e2 = new Entities\TestUniqueEntity(
-            id: uniqid(),
+            id: Uuid::uuid4(),
             name: Helpers\StringHelper::getUniqueName(),
         );
         $e3 = new Entities\TestUniqueEntity(
-            id: uniqid(),
+            id: Uuid::uuid4(),
             name: Helpers\StringHelper::getUniqueName(),
         );
         $e4 = new Entities\TestUniqueEntity(
-            id: uniqid(),
+            id: Uuid::uuid4(),
             name: Helpers\StringHelper::getUniqueName(),
         );
         $table = new Tables\TestUniqueTable();

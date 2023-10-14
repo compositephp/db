@@ -7,6 +7,7 @@ use Composite\DB\TableConfig;
 use Composite\DB\Tests\TestStand\Entities\TestUniqueSdEntity;
 use Composite\DB\Tests\TestStand\Interfaces\IUniqueTable;
 use Composite\Entity\AbstractEntity;
+use Ramsey\Uuid\UuidInterface;
 
 class TestUniqueSdCachedTable extends AbstractCachedTable implements IUniqueTable
 {
@@ -29,7 +30,7 @@ class TestUniqueSdCachedTable extends AbstractCachedTable implements IUniqueTabl
         ];
     }
 
-    public function findByPk(string $id): ?TestUniqueSdEntity
+    public function findByPk(UuidInterface $id): ?TestUniqueSdEntity
     {
         return $this->createEntity($this->findByPkInternal($id));
     }

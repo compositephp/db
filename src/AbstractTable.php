@@ -11,6 +11,7 @@ use Composite\Entity\Exceptions\EntityException;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Query\QueryBuilder;
+use Ramsey\Uuid\UuidInterface;
 
 abstract class AbstractTable
 {
@@ -330,7 +331,7 @@ abstract class AbstractTable
      * @return array<string, mixed>
      * @throws EntityException
      */
-    protected function getPkCondition(int|string|array|AbstractEntity $data): array
+    protected function getPkCondition(int|string|array|AbstractEntity|UuidInterface $data): array
     {
         $condition = [];
         if ($data instanceof AbstractEntity) {

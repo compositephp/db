@@ -7,11 +7,14 @@ use Composite\DB\Tests\TestStand\Entities;
 use Composite\DB\Tests\TestStand\Tables;
 use Composite\Entity\AbstractEntity;
 use Composite\Entity\Exceptions\EntityException;
+use Ramsey\Uuid\Uuid;
+use Ramsey\Uuid\UuidInterface;
 
 final class AbstractTableTest extends \PHPUnit\Framework\TestCase
 {
     public static function getPkCondition_dataProvider(): array
     {
+        $uuid = Uuid::uuid4();
         return [
             [
                 new Tables\TestAutoincrementTable(),
@@ -35,13 +38,13 @@ final class AbstractTableTest extends \PHPUnit\Framework\TestCase
             ],
             [
                 new Tables\TestUniqueTable(),
-                new Entities\TestUniqueEntity(id: '123abc', name: 'John'),
-                ['id' => '123abc'],
+                new Entities\TestUniqueEntity(id: $uuid, name: 'John'),
+                ['id' => $uuid->toString()],
             ],
             [
                 new Tables\TestUniqueTable(),
-                '123abc',
-                ['id' => '123abc'],
+                $uuid,
+                ['id' => $uuid->toString()],
             ],
             [
                 new Tables\TestAutoincrementSdTable(),
@@ -55,8 +58,8 @@ final class AbstractTableTest extends \PHPUnit\Framework\TestCase
             ],
             [
                 new Tables\TestUniqueSdTable(),
-                new Entities\TestUniqueSdEntity(id: '123abc', name: 'John'),
-                ['id' => '123abc'],
+                new Entities\TestUniqueSdEntity(id: $uuid, name: 'John'),
+                ['id' => $uuid->toString()],
             ],
         ];
     }
@@ -64,7 +67,7 @@ final class AbstractTableTest extends \PHPUnit\Framework\TestCase
     /**
      * @dataProvider getPkCondition_dataProvider
      */
-    public function test_getPkCondition(AbstractTable $table, int|string|array|AbstractEntity $object, array $expected): void
+    public function test_getPkCondition(AbstractTable $table, int|string|array|AbstractEntity|UuidInterface $object, array $expected): void
     {
         $reflectionMethod = new \ReflectionMethod($table, 'getPkCondition');
         $actual = $reflectionMethod->invoke($table, $object);
