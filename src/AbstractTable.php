@@ -72,36 +72,20 @@ abstract class AbstractTable
                 $entity->updated_at = new \DateTimeImmutable();
                 $changedColumns['updated_at'] = DateTimeHelper::dateTimeToString($entity->updated_at);
             }
-
-
             if ($this->config->hasOptimisticLock()
                 && method_exists($entity, 'getVersion')
                 && method_exists($entity, 'incrementVersion')) {
                 $where['lock_version'] = $entity->getVersion();
                 $entity->incrementVersion();
                 $changedColumns['lock_version'] = $entity->getVersion();
-
-                try {
-                    $connection->beginTransaction();
-                    $versionUpdated = $connection->update(
-                        $this->getTableName(),
-                        $changedColumns,
-                        $where
-                    );
-                    if (!$versionUpdated) {
-                        throw new Exceptions\LockException('Failed to update entity version, concurrency modification, rolling back.');
-                    }
-                    $connection->commit();
-                } catch (\Throwable $e) {
-                    $connection->rollBack();
-                    throw $e;
-                }
-            } else {
-                $connection->update(
-                    $this->getTableName(),
-                    $changedColumns,
-                    $where
-                );
+            }
+            $entityUpdated = $connection->update(
+                table: $this->getTableName(),
+                data: $changedColumns,
+                criteria: $where,
+            );
+            if ($this->config->hasOptimisticLock() && !$entityUpdated) {
+                throw new Exceptions\LockException('Failed to update entity version, concurrency modification, rolling back.');
             }
             $entity->resetChangedColumns();
         }
