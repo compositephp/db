@@ -9,12 +9,15 @@ use Composite\DB\Tests\TestStand\Entities;
 use Composite\DB\Tests\TestStand\Tables;
 use Composite\Entity\AbstractEntity;
 use Composite\DB\Tests\Helpers;
+use Ramsey\Uuid\Uuid;
 
 final class AbstractCachedTableTest extends \PHPUnit\Framework\TestCase
 {
     public static function getOneCacheKey_dataProvider(): array
     {
         $cache = Helpers\CacheHelper::getCache();
+        $uuid = Uuid::uuid4();
+        $uuidCacheKey = str_replace('-', '_', (string)$uuid);
         return [
             [
                 new Tables\TestAutoincrementCachedTable($cache),
@@ -28,16 +31,13 @@ final class AbstractCachedTableTest extends \PHPUnit\Framework\TestCase
             ],
             [
                 new Tables\TestUniqueCachedTable($cache),
-                new Entities\TestUniqueEntity(id: '123abc', name: 'John'),
-                'sqlite.TestUnique.v1.o.id_123abc',
+                new Entities\TestUniqueEntity(id: $uuid, name: 'John'),
+                'sqlite.TestUnique.v1.o.id_' . $uuidCacheKey,
             ],
             [
-                new Tables\TestUniqueCachedTable($cache),
-                new Entities\TestUniqueEntity(
-                    id: implode('', array_fill(0, 100, 'a')),
-                    name: 'John',
-                ),
-                'ed66f06444d851a981a9ddcecbbf4d5860cd3131',
+                new Tables\TestCompositeCachedTable($cache),
+                new Entities\TestCompositeEntity(user_id: PHP_INT_MAX, post_id: PHP_INT_MAX, message: 'Text'),
+                '69b5bbf599d78f0274feb5cb0e6424f35cca0b57',
             ],
         ];
     }
@@ -45,7 +45,7 @@ final class AbstractCachedTableTest extends \PHPUnit\Framework\TestCase
     /**
      * @dataProvider getOneCacheKey_dataProvider
      */
-    public function test_getOneCacheKey(AbstractTable $table, AbstractEntity $object, string $expected): void
+    public function test_getOneCacheKey(AbstractCachedTable $table, AbstractEntity $object, string $expected): void
     {
         $reflectionMethod = new \ReflectionMethod($table, 'getOneCacheKey');
         $actual = $reflectionMethod->invoke($table, $object);
@@ -194,6 +194,8 @@ final class AbstractCachedTableTest extends \PHPUnit\Framework\TestCase
 
     public static function collectCacheKeysByEntity_dataProvider(): array
     {
+        $uuid = Uuid::uuid4();
+        $uuidCacheKey = str_replace('-', '_', (string)$uuid);
         return [
             [
                 new Entities\TestAutoincrementEntity(name: 'foo'),
@@ -215,21 +217,21 @@ final class AbstractCachedTableTest extends \PHPUnit\Framework\TestCase
                 ],
             ],
             [
-                new Entities\TestUniqueEntity(id: '123abc', name: 'foo'),
+                new Entities\TestUniqueEntity(id: $uuid, name: 'foo'),
                 new Tables\TestUniqueCachedTable(Helpers\CacheHelper::getCache()),
                 [
                     'sqlite.TestUnique.v1.l.name_eq_foo',
                     'sqlite.TestUnique.v1.c.name_eq_foo',
-                    'sqlite.TestUnique.v1.o.id_123abc',
+                    'sqlite.TestUnique.v1.o.id_' . $uuidCacheKey,
                 ],
             ],
             [
-                Entities\TestUniqueEntity::fromArray(['id' => '456def', 'name' => 'bar']),
+                Entities\TestUniqueEntity::fromArray(['id' => $uuid, 'name' => 'bar']),
                 new Tables\TestUniqueCachedTable(Helpers\CacheHelper::getCache()),
                 [
                     'sqlite.TestUnique.v1.l.name_eq_bar',
                     'sqlite.TestUnique.v1.c.name_eq_bar',
-                    'sqlite.TestUnique.v1.o.id_456def',
+                    'sqlite.TestUnique.v1.o.id_' . $uuidCacheKey,
                 ],
             ],
         ];

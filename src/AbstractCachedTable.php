@@ -5,6 +5,7 @@ namespace Composite\DB;
 use Composite\DB\Exceptions\DbException;
 use Composite\Entity\AbstractEntity;
 use Psr\SimpleCache\CacheInterface;
+use Ramsey\Uuid\UuidInterface;
 
 abstract class AbstractCachedTable extends AbstractTable
 {
@@ -196,9 +197,8 @@ abstract class AbstractCachedTable extends AbstractTable
 
     /**
      * @param string|int|array<string, mixed>|AbstractEntity $keyOrEntity
-     * @throws \Composite\Entity\Exceptions\EntityException
      */
-    protected function getOneCacheKey(string|int|array|AbstractEntity $keyOrEntity): string
+    protected function getOneCacheKey(string|int|array|AbstractEntity|UuidInterface $keyOrEntity): string
     {
         if (!is_array($keyOrEntity)) {
             $condition = $this->getPkCondition($keyOrEntity);

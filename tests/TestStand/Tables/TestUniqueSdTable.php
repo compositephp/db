@@ -4,6 +4,7 @@ namespace Composite\DB\Tests\TestStand\Tables;
 
 use Composite\DB\TableConfig;
 use Composite\DB\Tests\TestStand\Entities\TestUniqueSdEntity;
+use Ramsey\Uuid\UuidInterface;
 
 class TestUniqueSdTable extends TestUniqueTable
 {
@@ -18,7 +19,7 @@ class TestUniqueSdTable extends TestUniqueTable
         return TableConfig::fromEntitySchema(TestUniqueSdEntity::schema());
     }
 
-    public function findByPk(string $id): ?TestUniqueSdEntity
+    public function findByPk(UuidInterface $id): ?TestUniqueSdEntity
     {
         return $this->createEntity($this->findByPkInternal($id));
     }
@@ -40,7 +41,7 @@ class TestUniqueSdTable extends TestUniqueTable
             "
             CREATE TABLE IF NOT EXISTS {$this->getTableName()}
             (
-                `id` VARCHAR(255) NOT NULL,
+                `id` VARCHAR(32) NOT NULL,
                 `name` VARCHAR(255) NOT NULL,
                 `created_at` TIMESTAMP NOT NULL,
                 `deleted_at` TIMESTAMP NULL DEFAULT NULL,

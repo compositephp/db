@@ -60,7 +60,7 @@ final class OptimisticLockTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue($db->rollBack());
 
         $olEntity3 = $olTable1->findByPk($olEntity1->id);
-        $this->assertEquals(1, $olEntity3->version);
+        $this->assertEquals(1, $olEntity3->getVersion());
         $this->assertEquals('John', $olEntity3->name);
     }
 }

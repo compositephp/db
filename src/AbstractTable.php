@@ -3,6 +3,7 @@
 namespace Composite\DB;
 
 use Composite\DB\MultiQuery\MultiInsert;
+use Composite\DB\MultiQuery\MultiSelect;
 use Composite\Entity\Helpers\DateTimeHelper;
 use Composite\Entity\AbstractEntity;
 use Composite\DB\Exceptions\DbException;
@@ -10,6 +11,7 @@ use Composite\Entity\Exceptions\EntityException;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Query\QueryBuilder;
+use Ramsey\Uuid\UuidInterface;
 
 abstract class AbstractTable
 {
@@ -70,35 +72,20 @@ abstract class AbstractTable
                 $entity->updated_at = new \DateTimeImmutable();
                 $changedColumns['updated_at'] = DateTimeHelper::dateTimeToString($entity->updated_at);
             }
-
-            if ($this->config->hasOptimisticLock() && isset($entity->version)) {
-                $currentVersion = $entity->version;
-                try {
-                    $connection->beginTransaction();
-                    $connection->update(
-                        $this->getTableName(),
-                        $changedColumns,
-                        $where
-                    );
-                    $versionUpdated = $connection->update(
-                        $this->getTableName(),
-                        ['version' => $currentVersion + 1],
-                        $where + ['version' => $currentVersion]
-                    );
-                    if (!$versionUpdated) {
-                        throw new DbException('Failed to update entity version, concurrency modification, rolling back.');
-                    }
-                    $connection->commit();
-                } catch (\Throwable $e) {
-                    $connection->rollBack();
-                    throw $e;
-                }
-            } else {
-                $connection->update(
-                    $this->getTableName(),
-                    $changedColumns,
-                    $where
-                );
+            if ($this->config->hasOptimisticLock()
+                && method_exists($entity, 'getVersion')
+                && method_exists($entity, 'incrementVersion')) {
+                $where['lock_version'] = $entity->getVersion();
+                $entity->incrementVersion();
+                $changedColumns['lock_version'] = $entity->getVersion();
+            }
+            $entityUpdated = $connection->update(
+                table: $this->getTableName(),
+                data: $changedColumns,
+                criteria: $where,
+            );
+            if ($this->config->hasOptimisticLock() && !$entityUpdated) {
+                throw new Exceptions\LockException('Failed to update entity version, concurrency modification, rolling back.');
             }
             $entity->resetChangedColumns();
         }
@@ -211,13 +198,15 @@ abstract class AbstractTable
 
     /**
      * @param array<string, mixed> $where
+     * @param array<string, string>|string $orderBy
      * @return array<string, mixed>|null
      * @throws \Doctrine\DBAL\Exception
      */
-    protected function findOneInternal(array $where): ?array
+    protected function findOneInternal(array $where, array|string $orderBy = []): ?array
     {
         $query = $this->select();
         $this->buildWhere($query, $where);
+        $this->applyOrderBy($query, $orderBy);
         return $query->fetchAssociative() ?: null;
     }
 
@@ -225,7 +214,6 @@ abstract class AbstractTable
      * @param array<int|string|array<string,mixed>> $pkList
      * @return array<array<string, mixed>>
      * @throws DbException
-     * @throws EntityException
      * @throws \Doctrine\DBAL\Exception
      */
     protected function findMultiInternal(array $pkList): array
@@ -233,44 +221,8 @@ abstract class AbstractTable
         if (!$pkList) {
             return [];
         }
-        /** @var class-string<AbstractEntity> $class */
-        $class = $this->config->entityClass;
-
-        $pkColumns = [];
-        foreach ($this->config->primaryKeys as $primaryKeyName) {
-            $pkColumns[$primaryKeyName] = $class::schema()->getColumn($primaryKeyName);
-        }
-        if (count($pkColumns) === 1) {
-            if (!array_is_list($pkList)) {
-                throw new DbException('Input argument $pkList must be list');
-            }
-            /** @var \Composite\Entity\Columns\AbstractColumn $pkColumn */
-            $pkColumn = reset($pkColumns);
-            $preparedPkValues = array_map(fn ($pk) => $pkColumn->uncast($pk), $pkList);
-            $query = $this->select();
-            $this->buildWhere($query, [$pkColumn->name => $preparedPkValues]);
-        } else {
-            $query = $this->select();
-            $expressions = [];
-            foreach ($pkList as $i => $pkArray) {
-                if (!is_array($pkArray)) {
-                    throw new DbException('For tables with composite keys, input array must consist associative arrays');
-                }
-                $pkOrExpr = [];
-                foreach ($pkArray as $pkName => $pkValue) {
-                    if (is_string($pkName) && isset($pkColumns[$pkName])) {
-                        $preparedPkValue = $pkColumns[$pkName]->cast($pkValue);
-                        $pkOrExpr[] = $query->expr()->eq($pkName, ':' . $pkName . $i);
-                        $query->setParameter($pkName . $i, $preparedPkValue);
-                    }
-                }
-                if ($pkOrExpr) {
-                    $expressions[] = $query->expr()->and(...$pkOrExpr);
-                }
-            }
-            $query->where($query->expr()->or(...$expressions));
-        }
-        return $query->executeQuery()->fetchAllAssociative();
+        $multiSelect = new MultiSelect($this->getConnection(), $this->config, $pkList);
+        return $multiSelect->getQueryBuilder()->executeQuery()->fetchAllAssociative();
     }
 
     /**
@@ -294,22 +246,7 @@ abstract class AbstractTable
                 $query->setParameter($param, $value);
             }
         }
-        if ($orderBy) {
-            if (is_array($orderBy)) {
-                foreach ($orderBy as $column => $direction) {
-                    $query->addOrderBy($column, $direction);
-                }
-            } else {
-                foreach (explode(',', $orderBy) as $orderByPart) {
-                    $orderByPart = trim($orderByPart);
-                    if (preg_match('/(.+)\s(asc|desc)$/i', $orderByPart, $orderByPartMatch)) {
-                        $query->addOrderBy($orderByPartMatch[1], $orderByPartMatch[2]);
-                    } else {
-                        $query->addOrderBy($orderByPart);
-                    }
-                }
-            }
-        }
+        $this->applyOrderBy($query, $orderBy);
         if ($limit > 0) {
             $query->setMaxResults($limit);
         }
@@ -366,7 +303,7 @@ abstract class AbstractTable
      * @return array<string, mixed>
      * @throws EntityException
      */
-    protected function getPkCondition(int|string|array|AbstractEntity $data): array
+    protected function getPkCondition(int|string|array|AbstractEntity|UuidInterface $data): array
     {
         $condition = [];
         if ($data instanceof AbstractEntity) {
@@ -395,7 +332,7 @@ abstract class AbstractTable
     /**
      * @param array<string, mixed> $where
      */
-    private function buildWhere(QueryBuilder $query, array $where): void
+    private function buildWhere(\Doctrine\DBAL\Query\QueryBuilder $query, array $where): void
     {
         foreach ($where as $column => $value) {
             if ($value === null) {
@@ -432,5 +369,29 @@ abstract class AbstractTable
             }
         }
         return $data;
+    }
+
+    /**
+     * @param array<string, string>|string $orderBy
+     */
+    private function applyOrderBy(QueryBuilder $query, string|array $orderBy): void
+    {
+        if (!$orderBy) {
+            return;
+        }
+        if (is_array($orderBy)) {
+            foreach ($orderBy as $column => $direction) {
+                $query->addOrderBy($column, $direction);
+            }
+        } else {
+            foreach (explode(',', $orderBy) as $orderByPart) {
+                $orderByPart = trim($orderByPart);
+                if (preg_match('/(.+)\s(asc|desc)$/i', $orderByPart, $orderByPartMatch)) {
+                    $query->addOrderBy($orderByPartMatch[1], $orderByPartMatch[2]);
+                } else {
+                    $query->addOrderBy($orderByPart);
+                }
+            }
+        }
     }
 }

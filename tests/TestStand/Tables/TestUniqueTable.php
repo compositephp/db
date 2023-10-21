@@ -7,6 +7,7 @@ use Composite\DB\TableConfig;
 use Composite\DB\Tests\TestStand\Entities\TestUniqueEntity;
 use Composite\DB\Tests\TestStand\Interfaces\IUniqueTable;
 use Composite\Entity\AbstractEntity;
+use Ramsey\Uuid\UuidInterface;
 
 class TestUniqueTable extends AbstractTable implements IUniqueTable
 {
@@ -29,7 +30,7 @@ class TestUniqueTable extends AbstractTable implements IUniqueTable
         return TableConfig::fromEntitySchema(TestUniqueEntity::schema());
     }
 
-    public function findByPk(string $id): ?TestUniqueEntity
+    public function findByPk(UuidInterface $id): ?TestUniqueEntity
     {
         return $this->createEntity($this->findByPkInternal($id));
     }

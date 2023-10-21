@@ -4,10 +4,11 @@ namespace Composite\DB\Tests\TestStand\Interfaces;
 
 use Composite\DB\Tests\TestStand\Entities\TestCompositeEntity;
 use Composite\DB\Tests\TestStand\Entities\TestUniqueEntity;
+use Ramsey\Uuid\UuidInterface;
 
 interface IUniqueTable
 {
-    public function findByPk(string $id): ?TestUniqueEntity;
+    public function findByPk(UuidInterface $id): ?TestUniqueEntity;
     /**
      * @return TestCompositeEntity[]
      */
