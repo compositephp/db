@@ -4,5 +4,15 @@ namespace Composite\DB\Traits;
 
 trait OptimisticLock
 {
-    public int $version = 1;
+    protected int $lock_version = 1;
+
+    public function getVersion(): int
+    {
+        return $this->lock_version;
+    }
+
+    public function incrementVersion(): void
+    {
+        $this->lock_version++;
+    }
 }

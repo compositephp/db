@@ -73,22 +73,23 @@ abstract class AbstractTable
                 $changedColumns['updated_at'] = DateTimeHelper::dateTimeToString($entity->updated_at);
             }
 
-            if ($this->config->hasOptimisticLock() && isset($entity->version)) {
-                $currentVersion = $entity->version;
+
+            if ($this->config->hasOptimisticLock()
+                && method_exists($entity, 'getVersion')
+                && method_exists($entity, 'incrementVersion')) {
+                $where['lock_version'] = $entity->getVersion();
+                $entity->incrementVersion();
+                $changedColumns['lock_version'] = $entity->getVersion();
+
                 try {
                     $connection->beginTransaction();
-                    $connection->update(
+                    $versionUpdated = $connection->update(
                         $this->getTableName(),
                         $changedColumns,
                         $where
                     );
-                    $versionUpdated = $connection->update(
-                        $this->getTableName(),
-                        ['version' => $currentVersion + 1],
-                        $where + ['version' => $currentVersion]
-                    );
                     if (!$versionUpdated) {
-                        throw new DbException('Failed to update entity version, concurrency modification, rolling back.');
+                        throw new Exceptions\LockException('Failed to update entity version, concurrency modification, rolling back.');
                     }
                     $connection->commit();
                 } catch (\Throwable $e) {
@@ -213,13 +214,15 @@ abstract class AbstractTable
 
     /**
      * @param array<string, mixed> $where
+     * @param array<string, string>|string $orderBy
      * @return array<string, mixed>|null
      * @throws \Doctrine\DBAL\Exception
      */
-    protected function findOneInternal(array $where): ?array
+    protected function findOneInternal(array $where, array|string $orderBy = []): ?array
     {
         $query = $this->select();
         $this->buildWhere($query, $where);
+        $this->applyOrderBy($query, $orderBy);
         return $query->fetchAssociative() ?: null;
     }
 
@@ -259,22 +262,7 @@ abstract class AbstractTable
                 $query->setParameter($param, $value);
             }
         }
-        if ($orderBy) {
-            if (is_array($orderBy)) {
-                foreach ($orderBy as $column => $direction) {
-                    $query->addOrderBy($column, $direction);
-                }
-            } else {
-                foreach (explode(',', $orderBy) as $orderByPart) {
-                    $orderByPart = trim($orderByPart);
-                    if (preg_match('/(.+)\s(asc|desc)$/i', $orderByPart, $orderByPartMatch)) {
-                        $query->addOrderBy($orderByPartMatch[1], $orderByPartMatch[2]);
-                    } else {
-                        $query->addOrderBy($orderByPart);
-                    }
-                }
-            }
-        }
+        $this->applyOrderBy($query, $orderBy);
         if ($limit > 0) {
             $query->setMaxResults($limit);
         }
@@ -397,5 +385,29 @@ abstract class AbstractTable
             }
         }
         return $data;
+    }
+
+    /**
+     * @param array<string, string>|string $orderBy
+     */
+    private function applyOrderBy(QueryBuilder $query, string|array $orderBy): void
+    {
+        if (!$orderBy) {
+            return;
+        }
+        if (is_array($orderBy)) {
+            foreach ($orderBy as $column => $direction) {
+                $query->addOrderBy($column, $direction);
+            }
+        } else {
+            foreach (explode(',', $orderBy) as $orderByPart) {
+                $orderByPart = trim($orderByPart);
+                if (preg_match('/(.+)\s(asc|desc)$/i', $orderByPart, $orderByPartMatch)) {
+                    $query->addOrderBy($orderByPartMatch[1], $orderByPartMatch[2]);
+                } else {
+                    $query->addOrderBy($orderByPart);
+                }
+            }
+        }
     }
 }

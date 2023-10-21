@@ -32,7 +32,7 @@ class TestOptimisticLockTable extends AbstractTable
             (
                 `id` INTEGER NOT NULL CONSTRAINT TestAutoincrement_pk PRIMARY KEY AUTOINCREMENT,
                 `name` VARCHAR(255) NOT NULL,
-                `version` INTEGER NOT NULL DEFAULT 1,
+                `lock_version` INTEGER NOT NULL DEFAULT 1,
                 `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
             );
             "
