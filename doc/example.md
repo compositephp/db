@@ -52,16 +52,14 @@ class UsersTable extends \Composite\DB\AbstractTable
     public function findAllActive(): array
     {
         return $this->createEntities($this->_findAll(
-            'status = :status',
-            ['status' => Status::ACTIVE->name],
+            ['status' => Status::ACTIVE],
         ));
     }
 
     public function countAllActive(): int
     {
         return $this->_countAll(
-            'status = :status',
-            ['status' => Status::ACTIVE->name],
+            ['status' => Status::ACTIVE],
         );
     }
 

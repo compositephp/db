@@ -55,7 +55,6 @@ class PostsTable extends AbstractCachedTable
     public function findAllFeatured(): array
     {
         return $this->createEntities($this->_findAll(
-            'is_featured = :is_featured',
             ['is_featured' => true],
         ));
     }

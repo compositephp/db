@@ -68,14 +68,31 @@ Example with internal helper:
 public function findAllActiveAdults(): array
 {
     $rows = $this->_findAll(
-        'age > :age AND status = :status',
-        ['age' => 18, 'status' => Status::ACTIVE->name],
+        new Where(
+            'age > :age AND status = :status',
+            ['age' => 18, 'status' => Status::ACTIVE->name],
+        )
     );
     return $this->createEntities($rows);
 }
 ```
 
-Example with pure query builder
+Or it might be simplified to:
+```php
+/**
+ * @return User[]
+ */
+public function findAllActiveAdults(): array
+{
+    $rows = $this->_findAll([
+        'age' => ['>', 18],
+        'status' => Status:ACTIVE,
+    ]);
+    return $this->createEntities($rows);
+}
+```
+
+Or you can use standard Doctrine QueryBuilder
 ```php
 /**
  * @return User[]
