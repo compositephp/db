@@ -51,16 +51,6 @@ final class AbstractTableTest extends \PHPUnit\Framework\TestCase
                 Entities\TestAutoincrementSdEntity::fromArray(['id' => 123, 'name' => 'John']),
                 ['id' => 123],
             ],
-            [
-                new Tables\TestCompositeSdTable(),
-                new Entities\TestCompositeSdEntity(user_id: 123, post_id: 456, message: 'Text'),
-                ['user_id' => 123, 'post_id' => 456],
-            ],
-            [
-                new Tables\TestUniqueSdTable(),
-                new Entities\TestUniqueSdEntity(id: $uuid, name: 'John'),
-                ['id' => $uuid->toString()],
-            ],
         ];
     }
 
@@ -123,29 +113,81 @@ final class AbstractTableTest extends \PHPUnit\Framework\TestCase
         $buildWhereReflection->invokeArgs($table, [$queryBuilder, $where]);
 
         $this->assertEquals($expectedSQL, $queryBuilder->getSQL());
+        $this->assertEquals($expectedParams, $queryBuilder->getParameters());
     }
 
     public static function buildWhere_dataProvider(): array
     {
         return [
-            // Test when value is null
+            // Scalar value
             [
-                ['column1' => null],
-                'SELECT * FROM Strict WHERE column1 IS NULL',
+                ['column' => 1],
+                'SELECT * FROM Strict WHERE column = :column',
+                ['column' => 1]
+            ],
+
+            // Null value
+            [
+                ['column' => null],
+                'SELECT * FROM Strict WHERE column IS NULL',
                 []
             ],
-            // Test when value is an array
+
+            // Greater than comparison
             [
-                ['column1' => [1, 2, 3]],
-                'SELECT * FROM Strict WHERE column1 IN (1, 2, 3)',
-                [1, 2, 3]
+                ['column' => ['>', 0]],
+                'SELECT * FROM Strict WHERE column > :column',
+                ['column' => 0]
             ],
-            // Test when value is a single value
+
+            // Less than comparison
             [
-                ['column1' => 'value1'],
-                'SELECT * FROM Strict WHERE column1 = :column1',
-                ['value1']
+                ['column' => ['<', 5]],
+                'SELECT * FROM Strict WHERE column < :column',
+                ['column' => 5]
             ],
+
+            // Greater than or equal to comparison
+            [
+                ['column' => ['>=', 3]],
+                'SELECT * FROM Strict WHERE column >= :column',
+                ['column' => 3]
+            ],
+
+            // Less than or equal to comparison
+            [
+                ['column' => ['<=', 7]],
+                'SELECT * FROM Strict WHERE column <= :column',
+                ['column' => 7]
+            ],
+
+            // Not equal to comparison with scalar value
+            [
+                ['column' => ['<>', 10]],
+                'SELECT * FROM Strict WHERE column <> :column',
+                ['column' => 10]
+            ],
+
+            // Not equal to comparison with null
+            [
+                ['column' => ['!=', null]],
+                'SELECT * FROM Strict WHERE column IS NOT NULL',
+                []
+            ],
+
+            // IN condition
+            [
+                ['column' => [1, 2, 3]],
+                'SELECT * FROM Strict WHERE column IN(:column0, :column1, :column2)',
+                ['column0' => 1, 'column1' => 2, 'column2' => 3]
+            ],
+
+            // Multiple conditions
+            [
+                ['column1' => 1, 'column2' => null, 'column3' => ['>', 5]],
+                'SELECT * FROM Strict WHERE (column1 = :column1) AND (column2 IS NULL) AND (column3 > :column3)',
+                ['column1' => 1, 'column3' => 5]
+            ]
         ];
     }
 }

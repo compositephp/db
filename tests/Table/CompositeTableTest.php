@@ -20,28 +20,19 @@ final class CompositeTableTest extends \PHPUnit\Framework\TestCase
                 Entities\TestCompositeEntity::class,
             ],
             [
-                new Tables\TestCompositeSdTable(),
-                Entities\TestCompositeSdEntity::class,
-            ],
-            [
                 new Tables\TestCompositeCachedTable(Helpers\CacheHelper::getCache()),
                 Entities\TestCompositeEntity::class,
-            ],
-            [
-                new Tables\TestCompositeSdCachedTable(Helpers\CacheHelper::getCache()),
-                Entities\TestCompositeSdEntity::class,
             ],
         ];
     }
 
     /**
-     * @param class-string<Entities\TestCompositeEntity|Entities\TestCompositeSdEntity> $class
+     * @param class-string<Entities\TestCompositeEntity> $class
      * @dataProvider crud_dataProvider
      */
     public function test_crud(AbstractTable&ICompositeTable $table, string $class): void
     {
         $table->truncate();
-        $tableConfig = TableConfig::fromEntitySchema($class::schema());
 
         $entity = new $class(
             user_id: mt_rand(1, 1000000),
@@ -57,14 +48,7 @@ final class CompositeTableTest extends \PHPUnit\Framework\TestCase
         $this->assertEntityExists($table, $entity);
 
         $table->delete($entity);
-
-        if ($tableConfig->hasSoftDelete()) {
-            /** @var Entities\TestCompositeSdEntity $deletedEntity */
-            $deletedEntity = $table->findOne(user_id: $entity->user_id, post_id: $entity->post_id);
-            $this->assertTrue($deletedEntity->isDeleted());
-        } else {
-            $this->assertEntityNotExists($table, $entity);
-        }
+        $this->assertEntityNotExists($table, $entity);
 
         $e1 = new $class(
             user_id: mt_rand(1, 1000000),
@@ -84,32 +68,10 @@ final class CompositeTableTest extends \PHPUnit\Framework\TestCase
         $this->assertEntityExists($table, $e1);
         $this->assertEntityExists($table, $e2);
 
-        if ($tableConfig->hasSoftDelete()) {
-            $e1->message = 'Exception';
-            $exceptionThrown = false;
-            try {
-                $table->deleteMany([$e1, $e2]);
-            } catch (\Exception) {
-                $exceptionThrown = true;
-            }
-            $this->assertTrue($exceptionThrown);
-            $e1->message = Helpers\StringHelper::getUniqueName();
-        }
-
         $table->deleteMany([$e1, $e2]);
 
-        if ($tableConfig->hasSoftDelete()) {
-            /** @var Entities\TestCompositeSdEntity $deletedEntity1 */
-            $deletedEntity1 = $table->findOne(user_id: $e1->user_id, post_id: $e1->post_id);
-            $this->assertTrue($deletedEntity1->isDeleted());
-
-            /** @var Entities\TestCompositeSdEntity $deletedEntity2 */
-            $deletedEntity2 = $table->findOne(user_id: $e2->user_id, post_id: $e2->post_id);
-            $this->assertTrue($deletedEntity2->isDeleted());
-        } else {
-            $this->assertEntityNotExists($table, $e1);
-            $this->assertEntityNotExists($table, $e2);
-        }
+        $this->assertEntityNotExists($table, $e1);
+        $this->assertEntityNotExists($table, $e2);
     }
 
     public function test_getMulti(): void

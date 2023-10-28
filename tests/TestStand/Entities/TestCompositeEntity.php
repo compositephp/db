@@ -14,6 +14,7 @@ class TestCompositeEntity extends AbstractEntity
         #[PrimaryKey]
         public readonly int $post_id,
         public string $message,
+        public Enums\TestUnitEnum $status = Enums\TestUnitEnum::ACTIVE,
         public readonly \DateTimeImmutable $created_at = new \DateTimeImmutable(),
     ) {}
 }

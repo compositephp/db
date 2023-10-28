@@ -14,6 +14,7 @@ class TestUniqueEntity extends AbstractEntity
         #[PrimaryKey]
         public readonly UuidInterface $id,
         public string $name,
+        public Enums\TestBackedEnum $status = Enums\TestBackedEnum::ACTIVE,
         public readonly \DateTimeImmutable $created_at = new \DateTimeImmutable(),
     ) {}
 }

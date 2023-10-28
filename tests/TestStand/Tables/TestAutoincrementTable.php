@@ -6,6 +6,8 @@ use Composite\DB\AbstractTable;
 use Composite\DB\TableConfig;
 use Composite\DB\Tests\TestStand\Entities\TestAutoincrementEntity;
 use Composite\DB\Tests\TestStand\Interfaces\IAutoincrementTable;
+use Composite\DB\Where;
+use Composite\Entity\AbstractEntity;
 
 class TestAutoincrementTable extends AbstractTable implements IAutoincrementTable
 {
@@ -30,14 +32,21 @@ class TestAutoincrementTable extends AbstractTable implements IAutoincrementTabl
         return $this->createEntity($this->_findOne(['name' => $name]));
     }
 
+    public function delete(AbstractEntity|TestAutoincrementEntity &$entity): void
+    {
+        if ($entity->name === 'Exception') {
+            throw new \Exception('Test Exception');
+        }
+        parent::delete($entity);
+    }
+
     /**
      * @return TestAutoincrementEntity[]
      */
     public function findAllByName(string $name): array
     {
         return $this->createEntities($this->_findAll(
-            whereString: 'name = :name',
-            whereParams: ['name' => $name],
+            where: new Where('name = :name', ['name' => $name]),
             orderBy: 'id',
         ));
     }
@@ -56,10 +65,7 @@ class TestAutoincrementTable extends AbstractTable implements IAutoincrementTabl
 
     public function countAllByName(string $name): int
     {
-        return $this->_countAll(
-            'name = :name',
-            ['name' => $name]
-        );
+        return $this->_countAll(new Where('name = :name', ['name' => $name]));
     }
 
     /**

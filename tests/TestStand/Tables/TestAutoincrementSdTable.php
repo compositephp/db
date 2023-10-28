@@ -4,6 +4,7 @@ namespace Composite\DB\Tests\TestStand\Tables;
 
 use Composite\DB\TableConfig;
 use Composite\DB\Tests\TestStand\Entities\TestAutoincrementSdEntity;
+use Composite\DB\Where;
 
 class TestAutoincrementSdTable extends TestAutoincrementTable
 {
@@ -34,8 +35,7 @@ class TestAutoincrementSdTable extends TestAutoincrementTable
     public function findAllByName(string $name): array
     {
         return $this->createEntities($this->_findAll(
-            'name = :name',
-            ['name' => $name]
+            new Where('name = :name', ['name' => $name])
         ));
     }
 
@@ -45,6 +45,7 @@ class TestAutoincrementSdTable extends TestAutoincrementTable
     public function findRecent(int $limit, int $offset): array
     {
         return $this->createEntities($this->_findAll(
+            where: ['deleted_at' => null],
             orderBy: 'id DESC',
             limit: $limit,
             offset: $offset,

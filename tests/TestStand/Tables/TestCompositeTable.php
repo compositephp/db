@@ -3,6 +3,7 @@
 namespace Composite\DB\Tests\TestStand\Tables;
 
 use Composite\DB\TableConfig;
+use Composite\DB\Tests\TestStand\Entities\Enums\TestUnitEnum;
 use Composite\DB\Tests\TestStand\Entities\TestCompositeEntity;
 use Composite\DB\Tests\TestStand\Interfaces\ICompositeTable;
 use Composite\Entity\AbstractEntity;
@@ -40,18 +41,12 @@ class TestCompositeTable extends \Composite\DB\AbstractTable implements IComposi
      */
     public function findAllByUser(int $userId): array
     {
-        return $this->createEntities($this->_findAll(
-            'user_id = :user_id',
-            ['user_id' => $userId],
-        ));
+        return $this->createEntities($this->_findAll(['user_id' => $userId, 'status' => TestUnitEnum::ACTIVE]));
     }
 
     public function countAllByUser(int $userId): int
     {
-        return $this->_countAll(
-            'user_id = :user_id',
-            ['user_id' => $userId, 'deleted_at' => null],
-        );
+        return $this->_countAll(['user_id' => $userId]);
     }
 
     /**
@@ -73,6 +68,7 @@ class TestCompositeTable extends \Composite\DB\AbstractTable implements IComposi
                 `user_id` integer not null,
                 `post_id` integer not null,
                 `message` VARCHAR(255) DEFAULT '' NOT NULL,
+                `status` VARCHAR(16) DEFAULT 'ACTIVE' NOT NULL,
                 `created_at` TIMESTAMP NOT NULL,
                 CONSTRAINT TestComposite PRIMARY KEY (`user_id`, `post_id`)
             );

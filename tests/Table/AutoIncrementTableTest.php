@@ -85,6 +85,18 @@ final class AutoIncrementTableTest extends \PHPUnit\Framework\TestCase
         $preLastEntity = $table->findRecent(1, 1);
         $this->assertEquals($e1, $preLastEntity[0]);
 
+        if ($tableConfig->hasSoftDelete()) {
+            $e1->name = 'Exception';
+            $exceptionThrown = false;
+            try {
+                $table->deleteMany([$e1, $e2]);
+            } catch (\Exception) {
+                $exceptionThrown = true;
+            }
+            $this->assertTrue($exceptionThrown);
+            $e1->name = Helpers\StringHelper::getUniqueName();
+        }
+
         $table->deleteMany([$e1, $e2]);
 
         if ($tableConfig->hasSoftDelete()) {

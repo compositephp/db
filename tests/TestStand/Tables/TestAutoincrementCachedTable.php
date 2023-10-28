@@ -6,6 +6,7 @@ use Composite\DB\AbstractCachedTable;
 use Composite\DB\TableConfig;
 use Composite\DB\Tests\TestStand\Entities\TestAutoincrementEntity;
 use Composite\DB\Tests\TestStand\Interfaces\IAutoincrementTable;
+use Composite\DB\Where;
 use Composite\Entity\AbstractEntity;
 
 class TestAutoincrementCachedTable extends AbstractCachedTable implements IAutoincrementTable
@@ -25,14 +26,14 @@ class TestAutoincrementCachedTable extends AbstractCachedTable implements IAutoi
     {
         $keys = [
             $this->getOneCacheKey(['name' => $entity->name]),
-            $this->getListCacheKey('name = :name', ['name' => $entity->name]),
-            $this->getCountCacheKey('name = :name', ['name' => $entity->name]),
+            $this->getListCacheKey(new Where('name = :name', ['name' => $entity->name])),
+            $this->getCountCacheKey(new Where('name = :name', ['name' => $entity->name])),
         ];
         $oldName = $entity->getOldValue('name');
         if (!$entity->isNew() && $oldName !== $entity->name) {
             $keys[] = $this->getOneCacheKey(['name' => $oldName]);
-            $keys[] = $this->getListCacheKey('name = :name', ['name' => $oldName]);
-            $keys[] = $this->getCountCacheKey('name = :name', ['name' => $oldName]);
+            $keys[] = $this->getListCacheKey(new Where('name = :name', ['name' => $oldName]));
+            $keys[] = $this->getCountCacheKey(new Where('name = :name', ['name' => $oldName]));
         }
         return $keys;
     }
@@ -47,14 +48,21 @@ class TestAutoincrementCachedTable extends AbstractCachedTable implements IAutoi
         return $this->createEntity($this->_findOneCached(['name' => $name]));
     }
 
+    public function delete(TestAutoincrementEntity|AbstractEntity &$entity): void
+    {
+        if ($entity->name === 'Exception') {
+            throw new \Exception('Test Exception');
+        }
+        parent::delete($entity);
+    }
+
     /**
      * @return TestAutoincrementEntity[]
      */
     public function findAllByName(string $name): array
     {
         return $this->createEntities($this->_findAllCached(
-            'name = :name',
-            ['name' => $name],
+            new Where('name = :name', ['name' => $name])
         ));
     }
 
@@ -72,10 +80,7 @@ class TestAutoincrementCachedTable extends AbstractCachedTable implements IAutoi
 
     public function countAllByName(string $name): int
     {
-        return $this->_countAllCached(
-            'name = :name',
-            ['name' => $name],
-        );
+        return $this->_countByAllCached(new Where('name = :name', ['name' => $name]));
     }
 
     /**

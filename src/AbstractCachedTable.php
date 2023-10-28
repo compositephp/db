@@ -3,6 +3,7 @@
 namespace Composite\DB;
 
 use Composite\DB\Exceptions\DbException;
+use Composite\DB\Tests\TestStand\Entities\TestAutoincrementEntity;
 use Composite\Entity\AbstractEntity;
 use Psr\SimpleCache\CacheInterface;
 use Ramsey\Uuid\UuidInterface;
@@ -115,37 +116,35 @@ abstract class AbstractCachedTable extends AbstractTable
     }
 
     /**
-     * @param array<string, mixed> $whereParams
+     * @param array<string, mixed>|Where $where
      * @param array<string, string>|string $orderBy
      * @return array<string, mixed>[]
      */
     protected function _findAllCached(
-        string $whereString = '',
-        array $whereParams = [],
+        array|Where $where = [],
         array|string $orderBy = [],
         ?int $limit = null,
         null|int|\DateInterval $ttl = null,
     ): array
     {
         return $this->getCached(
-            $this->getListCacheKey($whereString, $whereParams, $orderBy, $limit),
-            fn() => $this->_findAll(whereString: $whereString, whereParams: $whereParams, orderBy: $orderBy, limit: $limit),
+            $this->getListCacheKey($where, $orderBy, $limit),
+            fn() => $this->_findAll(where: $where, orderBy: $orderBy, limit: $limit),
             $ttl,
         );
     }
 
     /**
-     * @param array<string, mixed> $whereParams
+     * @param array<string, mixed>|Where $where
      */
-    protected function _countAllCached(
-        string $whereString = '',
-        array $whereParams = [],
+    protected function _countByAllCached(
+        array|Where $where = [],
         null|int|\DateInterval $ttl = null,
     ): int
     {
         return (int)$this->getCached(
-            $this->getCountCacheKey($whereString, $whereParams),
-            fn() => $this->_countAll(whereString: $whereString, whereParams: $whereParams),
+            $this->getCountCacheKey($where),
+            fn() => $this->_countAll(where: $where),
             $ttl,
         );
     }
@@ -209,37 +208,35 @@ abstract class AbstractCachedTable extends AbstractTable
     }
 
     /**
-     * @param array<string, mixed> $whereParams
+     * @param array<string, mixed>|Where $where
      * @param array<string, string>|string $orderBy
      */
     protected function getListCacheKey(
-        string $whereString = '',
-        array $whereParams = [],
+        array|Where $where = [],
         array|string $orderBy = [],
         ?int $limit = null
     ): string
     {
-        $wherePart = $this->prepareWhereKey($whereString, $whereParams);
+        $wherePart = is_array($where) ? $where : $this->prepareWhereKey($where);
         return $this->buildCacheKey(
             'l',
-            $wherePart ?? 'all',
+            $wherePart ?: 'all',
             $orderBy ? ['ob' => $orderBy] : null,
             $limit ? ['limit' => $limit] : null,
         );
     }
 
     /**
-     * @param array<string, mixed> $whereParams
+     * @param array<string, mixed>|Where $where
      */
     protected function getCountCacheKey(
-        string $whereString = '',
-        array $whereParams = [],
+        array|Where $where = [],
     ): string
     {
-        $wherePart = $this->prepareWhereKey($whereString, $whereParams);
+        $wherePart = is_array($where) ? $where : $this->prepareWhereKey($where);
         return $this->buildCacheKey(
             'c',
-            $wherePart ?? 'all',
+            $wherePart ?: 'all',
         );
     }
 
@@ -280,18 +277,12 @@ abstract class AbstractCachedTable extends AbstractTable
         return trim((string)preg_replace('/_+/', '_', $string), '_');
     }
 
-    /**
-     * @param array<string, mixed> $whereParams
-     */
-    private function prepareWhereKey(string $whereString, array $whereParams): ?string
+    private function prepareWhereKey(Where $where): string
     {
-        if (!$whereString) {
-            return null;
-        }
         return str_replace(
-            array_map(fn (string $key): string => ':' . $key, array_keys($whereParams)),
-            array_values($whereParams),
-            $whereString,
+            array_map(fn (string $key): string => ':' . $key, array_keys($where->params)),
+            array_values($where->params),
+            $where->string,
         );
     }
 }

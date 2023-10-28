@@ -20,28 +20,19 @@ final class UniqueTableTest extends \PHPUnit\Framework\TestCase
                 Entities\TestUniqueEntity::class,
             ],
             [
-                new Tables\TestUniqueSdTable(),
-                Entities\TestUniqueSdEntity::class,
-            ],
-            [
                 new Tables\TestUniqueCachedTable(Helpers\CacheHelper::getCache()),
                 Entities\TestUniqueEntity::class,
-            ],
-            [
-                new Tables\TestUniqueSdCachedTable(Helpers\CacheHelper::getCache()),
-                Entities\TestUniqueSdEntity::class,
             ],
         ];
     }
 
     /**
-     * @param class-string<Entities\TestUniqueEntity|Entities\TestUniqueSdEntity> $class
+     * @param class-string<Entities\TestUniqueEntity> $class
      * @dataProvider crud_dataProvider
      */
     public function test_crud(AbstractTable&IUniqueTable $table, string $class): void
     {
         $table->truncate();
-        $tableConfig = TableConfig::fromEntitySchema($class::schema());
 
         $entity = new $class(
             id: Uuid::uuid4(),
@@ -56,14 +47,7 @@ final class UniqueTableTest extends \PHPUnit\Framework\TestCase
         $this->assertEntityExists($table, $entity);
 
         $table->delete($entity);
-
-        if ($tableConfig->hasSoftDelete()) {
-            /** @var Entities\TestUniqueSdEntity $deletedEntity */
-            $deletedEntity = $table->findByPk($entity->id);
-            $this->assertTrue($deletedEntity->isDeleted());
-        } else {
-            $this->assertEntityNotExists($table, $entity);
-        }
+        $this->assertEntityNotExists($table, $entity);
     }
 
     public function test_multiSave(): void

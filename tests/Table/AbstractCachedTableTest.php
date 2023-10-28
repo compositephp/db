@@ -7,6 +7,7 @@ use Composite\DB\AbstractTable;
 use Composite\DB\Exceptions\DbException;
 use Composite\DB\Tests\TestStand\Entities;
 use Composite\DB\Tests\TestStand\Tables;
+use Composite\DB\Where;
 use Composite\Entity\AbstractEntity;
 use Composite\DB\Tests\Helpers;
 use Ramsey\Uuid\Uuid;
@@ -91,7 +92,7 @@ final class AbstractCachedTableTest extends \PHPUnit\Framework\TestCase
     {
         $table = new Tables\TestAutoincrementCachedTable(Helpers\CacheHelper::getCache());
         $reflectionMethod = new \ReflectionMethod($table, 'getCountCacheKey');
-        $actual = $reflectionMethod->invoke($table, $whereString, $whereParams);
+        $actual = $reflectionMethod->invoke($table, new Where($whereString, $whereParams));
         $this->assertEquals($expected, $actual);
     }
 
@@ -150,7 +151,7 @@ final class AbstractCachedTableTest extends \PHPUnit\Framework\TestCase
     {
         $table = new Tables\TestAutoincrementCachedTable(Helpers\CacheHelper::getCache());
         $reflectionMethod = new \ReflectionMethod($table, 'getListCacheKey');
-        $actual = $reflectionMethod->invoke($table, $whereString, $whereArray, $orderBy, $limit);
+        $actual = $reflectionMethod->invoke($table, new Where($whereString, $whereArray), $orderBy, $limit);
         $this->assertEquals($expected, $actual);
     }
 
