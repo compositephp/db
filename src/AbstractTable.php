@@ -199,12 +199,12 @@ abstract class AbstractTable
     }
 
     /**
-     * @param array<string, mixed> $where
+     * @param array<string, mixed>|Where $where
      * @param array<string, string>|string $orderBy
      * @return array<string, mixed>|null
      * @throws \Doctrine\DBAL\Exception
      */
-    protected function _findOne(array $where, array|string $orderBy = []): ?array
+    protected function _findOne(array|Where $where, array|string $orderBy = []): ?array
     {
         $query = $this->select();
         $this->buildWhere($query, $where);
@@ -241,14 +241,7 @@ abstract class AbstractTable
     ): array
     {
         $query = $this->select();
-        if (is_array($where)) {
-            $this->buildWhere($query, $where);
-        } else {
-            $query->where($where->string);
-            foreach ($where->params as $param => $value) {
-                $query->setParameter($param, $value);
-            }
-        }
+        $this->buildWhere($query, $where);
         $this->applyOrderBy($query, $orderBy);
         if ($limit > 0) {
             $query->setMaxResults($limit);
@@ -332,40 +325,47 @@ abstract class AbstractTable
     }
 
     /**
-     * @param array<string, mixed> $where
+     * @param array<string, mixed>|Where $where
      */
-    private function buildWhere(QueryBuilder $query, array $where): void
+    private function buildWhere(QueryBuilder $query, array|Where $where): void
     {
-        foreach ($where as $column => $value) {
-            if ($value instanceof \BackedEnum) {
-                $value = $value->value;
-            } elseif ($value instanceof \UnitEnum) {
-                $value = $value->name;
-            }
+        if (is_array($where)) {
+            foreach ($where as $column => $value) {
+                if ($value instanceof \BackedEnum) {
+                    $value = $value->value;
+                } elseif ($value instanceof \UnitEnum) {
+                    $value = $value->name;
+                }
 
-            if (is_null($value)) {
-                $query->andWhere($column . ' IS NULL');
-            } elseif (is_array($value) && count($value) === 2 && \in_array($value[0], self::COMPARISON_SIGNS)) {
-                $comparisonSign = $value[0];
-                $comparisonValue = $value[1];
+                if (is_null($value)) {
+                    $query->andWhere($column . ' IS NULL');
+                } elseif (is_array($value) && count($value) === 2 && \in_array($value[0], self::COMPARISON_SIGNS)) {
+                    $comparisonSign = $value[0];
+                    $comparisonValue = $value[1];
 
-                // Handle special case of "!= null"
-                if ($comparisonSign === '!=' && is_null($comparisonValue)) {
-                    $query->andWhere($column . ' IS NOT NULL');
+                    // Handle special case of "!= null"
+                    if ($comparisonSign === '!=' && is_null($comparisonValue)) {
+                        $query->andWhere($column . ' IS NOT NULL');
+                    } else {
+                        $query->andWhere($column . ' ' . $comparisonSign . ' :' . $column)
+                            ->setParameter($column, $comparisonValue);
+                    }
+                } elseif (is_array($value)) {
+                    $placeholders = [];
+                    foreach ($value as $index => $val) {
+                        $placeholders[] = ':' . $column . $index;
+                        $query->setParameter($column . $index, $val);
+                    }
+                    $query->andWhere($column . ' IN(' . implode(', ', $placeholders) . ')');
                 } else {
-                    $query->andWhere($column . ' ' . $comparisonSign . ' :' . $column)
-                        ->setParameter($column, $comparisonValue);
+                    $query->andWhere($column . ' = :' . $column)
+                        ->setParameter($column, $value);
                 }
-            } elseif (is_array($value)) {
-                $placeholders = [];
-                foreach ($value as $index => $val) {
-                    $placeholders[] = ':' . $column . $index;
-                    $query->setParameter($column . $index, $val);
-                }
-                $query->andWhere($column . ' IN(' . implode(', ', $placeholders) . ')');
-            } else {
-                $query->andWhere($column . ' = :' . $column)
-                    ->setParameter($column, $value);
+            }
+        } else {
+            $query->where($where->string);
+            foreach ($where->params as $param => $value) {
+                $query->setParameter($param, $value);
             }
         }
     }
