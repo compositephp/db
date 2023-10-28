@@ -173,7 +173,7 @@ abstract class AbstractTable
      * @param array<string, mixed> $whereParams
      * @throws \Doctrine\DBAL\Exception
      */
-    protected function countAllInternal(string $whereString = '', array $whereParams = []): int
+    protected function _countAll(string $whereString = '', array $whereParams = []): int
     {
         $query = $this->select('COUNT(*)');
         if ($whereString) {
@@ -190,10 +190,10 @@ abstract class AbstractTable
      * @throws EntityException
      * @throws \Doctrine\DBAL\Exception
      */
-    protected function findByPkInternal(mixed $pk): ?array
+    protected function _findByPk(mixed $pk): ?array
     {
         $where = $this->getPkCondition($pk);
-        return $this->findOneInternal($where);
+        return $this->_findOne($where);
     }
 
     /**
@@ -202,7 +202,7 @@ abstract class AbstractTable
      * @return array<string, mixed>|null
      * @throws \Doctrine\DBAL\Exception
      */
-    protected function findOneInternal(array $where, array|string $orderBy = []): ?array
+    protected function _findOne(array $where, array|string $orderBy = []): ?array
     {
         $query = $this->select();
         $this->buildWhere($query, $where);
@@ -216,7 +216,7 @@ abstract class AbstractTable
      * @throws DbException
      * @throws \Doctrine\DBAL\Exception
      */
-    protected function findMultiInternal(array $pkList): array
+    protected function _findMulti(array $pkList): array
     {
         if (!$pkList) {
             return [];
@@ -231,7 +231,7 @@ abstract class AbstractTable
      * @return list<array<string,mixed>>
      * @throws \Doctrine\DBAL\Exception
      */
-    protected function findAllInternal(
+    protected function _findAll(
         string $whereString = '',
         array $whereParams = [],
         array|string $orderBy = [],
@@ -332,7 +332,7 @@ abstract class AbstractTable
     /**
      * @param array<string, mixed> $where
      */
-    private function buildWhere(\Doctrine\DBAL\Query\QueryBuilder $query, array $where): void
+    private function buildWhere(QueryBuilder $query, array $where): void
     {
         foreach ($where as $column => $value) {
             if ($value === null) {

@@ -20,12 +20,12 @@ class TestAutoincrementSdTable extends TestAutoincrementTable
 
     public function findByPk(int $id): ?TestAutoincrementSdEntity
     {
-        return $this->createEntity($this->findByPkInternal($id));
+        return $this->createEntity($this->_findByPk($id));
     }
 
     public function findOneByName(string $name): ?TestAutoincrementSdEntity
     {
-        return $this->createEntity($this->findOneInternal(['name' => $name, 'deleted_at' => null]));
+        return $this->createEntity($this->_findOne(['name' => $name, 'deleted_at' => null]));
     }
 
     /**
@@ -33,7 +33,7 @@ class TestAutoincrementSdTable extends TestAutoincrementTable
      */
     public function findAllByName(string $name): array
     {
-        return $this->createEntities($this->findAllInternal(
+        return $this->createEntities($this->_findAll(
             'name = :name',
             ['name' => $name]
         ));
@@ -44,7 +44,7 @@ class TestAutoincrementSdTable extends TestAutoincrementTable
      */
     public function findRecent(int $limit, int $offset): array
     {
-        return $this->createEntities($this->findAllInternal(
+        return $this->createEntities($this->_findAll(
             orderBy: 'id DESC',
             limit: $limit,
             offset: $offset,

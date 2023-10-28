@@ -39,12 +39,12 @@ class TestAutoincrementSdCachedTable extends AbstractCachedTable implements IAut
 
     public function findByPk(int $id): ?TestAutoincrementSdEntity
     {
-        return $this->createEntity($this->findByPkInternal($id));
+        return $this->createEntity($this->_findByPk($id));
     }
 
     public function findOneByName(string $name): ?TestAutoincrementSdEntity
     {
-        return $this->createEntity($this->findOneCachedInternal(['name' => $name]));
+        return $this->createEntity($this->_findOneCached(['name' => $name]));
     }
 
     /**
@@ -52,7 +52,7 @@ class TestAutoincrementSdCachedTable extends AbstractCachedTable implements IAut
      */
     public function findAllByName(string $name): array
     {
-        return $this->createEntities($this->findAllCachedInternal(
+        return $this->createEntities($this->_findAllCached(
             'name = :name',
             ['name' => $name, 'deleted_at' => null],
         ));
@@ -63,7 +63,7 @@ class TestAutoincrementSdCachedTable extends AbstractCachedTable implements IAut
      */
     public function findRecent(int $limit, int $offset): array
     {
-        return $this->createEntities($this->findAllInternal(
+        return $this->createEntities($this->_findAll(
             orderBy: 'id DESC',
             limit: $limit,
             offset: $offset,
@@ -72,7 +72,7 @@ class TestAutoincrementSdCachedTable extends AbstractCachedTable implements IAut
 
     public function countAllByName(string $name): int
     {
-        return $this->countAllCachedInternal(
+        return $this->_countAllCached(
             'name = :name',
             ['name' => $name],
         );

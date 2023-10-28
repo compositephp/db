@@ -22,12 +22,12 @@ class TestAutoincrementTable extends AbstractTable implements IAutoincrementTabl
 
     public function findByPk(int $id): ?TestAutoincrementEntity
     {
-        return $this->createEntity($this->findByPkInternal($id));
+        return $this->createEntity($this->_findByPk($id));
     }
 
     public function findOneByName(string $name): ?TestAutoincrementEntity
     {
-        return $this->createEntity($this->findOneInternal(['name' => $name]));
+        return $this->createEntity($this->_findOne(['name' => $name]));
     }
 
     /**
@@ -35,7 +35,7 @@ class TestAutoincrementTable extends AbstractTable implements IAutoincrementTabl
      */
     public function findAllByName(string $name): array
     {
-        return $this->createEntities($this->findAllInternal(
+        return $this->createEntities($this->_findAll(
             whereString: 'name = :name',
             whereParams: ['name' => $name],
             orderBy: 'id',
@@ -47,7 +47,7 @@ class TestAutoincrementTable extends AbstractTable implements IAutoincrementTabl
      */
     public function findRecent(int $limit, int $offset): array
     {
-        return $this->createEntities($this->findAllInternal(
+        return $this->createEntities($this->_findAll(
             orderBy: ['id' => 'DESC'],
             limit: $limit,
             offset: $offset,
@@ -56,7 +56,7 @@ class TestAutoincrementTable extends AbstractTable implements IAutoincrementTabl
 
     public function countAllByName(string $name): int
     {
-        return $this->countAllInternal(
+        return $this->_countAll(
             'name = :name',
             ['name' => $name]
         );
@@ -69,7 +69,7 @@ class TestAutoincrementTable extends AbstractTable implements IAutoincrementTabl
      */
     public function findMulti(array $ids): array
     {
-        return $this->createEntities($this->findMultiInternal($ids), 'id');
+        return $this->createEntities($this->_findMulti($ids), 'id');
     }
 
     public function init(): bool

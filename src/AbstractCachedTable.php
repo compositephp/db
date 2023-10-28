@@ -95,9 +95,9 @@ abstract class AbstractCachedTable extends AbstractTable
     /**
      * @return array<string, mixed>|null
      */
-    protected function findByPkCachedInternal(mixed $pk, null|int|\DateInterval $ttl = null): ?array
+    protected function _findByPkCached(mixed $pk, null|int|\DateInterval $ttl = null): ?array
     {
-        return $this->findOneCachedInternal($this->getPkCondition($pk), $ttl);
+        return $this->_findOneCached($this->getPkCondition($pk), $ttl);
     }
 
     /**
@@ -105,11 +105,11 @@ abstract class AbstractCachedTable extends AbstractTable
      * @param int|\DateInterval|null $ttl
      * @return array<string, mixed>|null
      */
-    protected function findOneCachedInternal(array $condition, null|int|\DateInterval $ttl = null): ?array
+    protected function _findOneCached(array $condition, null|int|\DateInterval $ttl = null): ?array
     {
         return $this->getCached(
             $this->getOneCacheKey($condition),
-            fn() => $this->findOneInternal($condition),
+            fn() => $this->_findOne($condition),
             $ttl,
         ) ?: null;
     }
@@ -119,7 +119,7 @@ abstract class AbstractCachedTable extends AbstractTable
      * @param array<string, string>|string $orderBy
      * @return array<string, mixed>[]
      */
-    protected function findAllCachedInternal(
+    protected function _findAllCached(
         string $whereString = '',
         array $whereParams = [],
         array|string $orderBy = [],
@@ -129,7 +129,7 @@ abstract class AbstractCachedTable extends AbstractTable
     {
         return $this->getCached(
             $this->getListCacheKey($whereString, $whereParams, $orderBy, $limit),
-            fn() => $this->findAllInternal(whereString: $whereString, whereParams: $whereParams, orderBy: $orderBy, limit: $limit),
+            fn() => $this->_findAll(whereString: $whereString, whereParams: $whereParams, orderBy: $orderBy, limit: $limit),
             $ttl,
         );
     }
@@ -137,7 +137,7 @@ abstract class AbstractCachedTable extends AbstractTable
     /**
      * @param array<string, mixed> $whereParams
      */
-    protected function countAllCachedInternal(
+    protected function _countAllCached(
         string $whereString = '',
         array $whereParams = [],
         null|int|\DateInterval $ttl = null,
@@ -145,7 +145,7 @@ abstract class AbstractCachedTable extends AbstractTable
     {
         return (int)$this->getCached(
             $this->getCountCacheKey($whereString, $whereParams),
-            fn() => $this->countAllInternal(whereString: $whereString, whereParams: $whereParams),
+            fn() => $this->_countAll(whereString: $whereString, whereParams: $whereParams),
             $ttl,
         );
     }
@@ -169,7 +169,7 @@ abstract class AbstractCachedTable extends AbstractTable
      * @return array<array<string, mixed>>
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
-    protected function findMultiCachedInternal(array $ids, null|int|\DateInterval $ttl = null): array
+    protected function _findMultiCached(array $ids, null|int|\DateInterval $ttl = null): array
     {
         $result = $cacheKeys = $foundIds = [];
         foreach ($ids as $id) {
@@ -188,7 +188,7 @@ abstract class AbstractCachedTable extends AbstractTable
         }
         $ids = array_diff($ids, $foundIds);
         foreach ($ids as $id) {
-            if ($row = $this->findByPkCachedInternal($id, $ttl)) {
+            if ($row = $this->_findByPkCached($id, $ttl)) {
                 $result[] = $row;
             }
         }

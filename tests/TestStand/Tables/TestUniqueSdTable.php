@@ -21,7 +21,7 @@ class TestUniqueSdTable extends TestUniqueTable
 
     public function findByPk(UuidInterface $id): ?TestUniqueSdEntity
     {
-        return $this->createEntity($this->findByPkInternal($id));
+        return $this->createEntity($this->_findByPk($id));
     }
 
     /**
@@ -29,7 +29,7 @@ class TestUniqueSdTable extends TestUniqueTable
      */
     public function findAllByName(string $name): array
     {
-        return $this->createEntities($this->findAllInternal(
+        return $this->createEntities($this->_findAll(
             'name = :name',
             ['name' => $name],
         ));

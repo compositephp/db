@@ -32,7 +32,7 @@ class TestUniqueTable extends AbstractTable implements IUniqueTable
 
     public function findByPk(UuidInterface $id): ?TestUniqueEntity
     {
-        return $this->createEntity($this->findByPkInternal($id));
+        return $this->createEntity($this->_findByPk($id));
     }
 
     /**
@@ -40,7 +40,7 @@ class TestUniqueTable extends AbstractTable implements IUniqueTable
      */
     public function findAllByName(string $name): array
     {
-        return $this->createEntities($this->findAllInternal(
+        return $this->createEntities($this->_findAll(
             'name = :name',
             ['name' => $name],
         ));
@@ -48,7 +48,7 @@ class TestUniqueTable extends AbstractTable implements IUniqueTable
 
     public function countAllByName(string $name): int
     {
-        return $this->countAllInternal(
+        return $this->_countAll(
             'name = :name',
             ['name' => $name],
         );

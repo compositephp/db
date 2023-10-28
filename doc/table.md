@@ -38,7 +38,7 @@ class UsersTable extends AbstractTable
 
     public function findOne(int $id): ?User
     {
-        return $this->createEntity($this->findOneInternal($id));
+        return $this->createEntity($this->_findOne($id));
     }
 
     /**
@@ -46,12 +46,12 @@ class UsersTable extends AbstractTable
      */
     public function findAll(): array
     {
-        return $this->createEntities($this->findAllInternal());
+        return $this->createEntities($this->_findAll());
     }
 
     public function countAll(): int
     {
-        return $this->countAllInternal();
+        return $this->_countAll();
     }
 }
 ```
@@ -67,7 +67,7 @@ Example with internal helper:
  */
 public function findAllActiveAdults(): array
 {
-    $rows = $this->findAllInternal(
+    $rows = $this->_findAll(
         'age > :age AND status = :status',
         ['age' => 18, 'status' => Status::ACTIVE->name],
     );

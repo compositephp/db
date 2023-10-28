@@ -20,7 +20,7 @@ class TestCompositeSdTable extends TestCompositeTable
 
     public function findOne(int $user_id, int $post_id): ?TestCompositeSdEntity
     {
-        return $this->createEntity($this->findOneInternal([
+        return $this->createEntity($this->_findOne([
             'user_id' => $user_id,
             'post_id' => $post_id,
         ]));
@@ -31,7 +31,7 @@ class TestCompositeSdTable extends TestCompositeTable
      */
     public function findAllByUser(int $userId): array
     {
-        return $this->createEntities($this->findAllInternal(
+        return $this->createEntities($this->_findAll(
             'user_id = :user_id',
             ['user_id' => $userId],
         ));
@@ -39,7 +39,7 @@ class TestCompositeSdTable extends TestCompositeTable
 
     public function countAllByUser(int $userId): int
     {
-        return $this->countAllInternal(
+        return $this->_countAll(
             'user_id = :user_id',
             ['user_id' => $userId],
         );

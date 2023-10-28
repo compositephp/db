@@ -32,7 +32,7 @@ class TestCompositeTable extends \Composite\DB\AbstractTable implements IComposi
 
     public function findOne(int $user_id, int $post_id): ?TestCompositeEntity
     {
-        return $this->createEntity($this->findOneInternal(['user_id' => $user_id, 'post_id' => $post_id]));
+        return $this->createEntity($this->_findOne(['user_id' => $user_id, 'post_id' => $post_id]));
     }
 
     /**
@@ -40,7 +40,7 @@ class TestCompositeTable extends \Composite\DB\AbstractTable implements IComposi
      */
     public function findAllByUser(int $userId): array
     {
-        return $this->createEntities($this->findAllInternal(
+        return $this->createEntities($this->_findAll(
             'user_id = :user_id',
             ['user_id' => $userId],
         ));
@@ -48,7 +48,7 @@ class TestCompositeTable extends \Composite\DB\AbstractTable implements IComposi
 
     public function countAllByUser(int $userId): int
     {
-        return $this->countAllInternal(
+        return $this->_countAll(
             'user_id = :user_id',
             ['user_id' => $userId, 'deleted_at' => null],
         );
@@ -61,7 +61,7 @@ class TestCompositeTable extends \Composite\DB\AbstractTable implements IComposi
      */
     public function findMulti(array $ids): array
     {
-        return $this->createEntities($this->findMultiInternal($ids), 'post_id');
+        return $this->createEntities($this->_findMulti($ids), 'post_id');
     }
 
     public function init(): bool

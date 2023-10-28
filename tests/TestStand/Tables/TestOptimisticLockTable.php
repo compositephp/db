@@ -21,7 +21,7 @@ class TestOptimisticLockTable extends AbstractTable
 
     public function findByPk(int $id): ?TestOptimisticLockEntity
     {
-        return $this->createEntity($this->findByPkInternal($id));
+        return $this->createEntity($this->_findByPk($id));
     }
 
     public function init(): bool

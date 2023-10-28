@@ -38,7 +38,7 @@ class TestCompositeSdCachedTable extends \Composite\DB\AbstractCachedTable imple
 
     public function findOne(int $user_id, int $post_id): ?TestCompositeSdEntity
     {
-        return $this->createEntity($this->findOneCachedInternal([
+        return $this->createEntity($this->_findOneCached([
             'user_id' => $user_id,
             'post_id' => $post_id,
         ]));
@@ -51,7 +51,7 @@ class TestCompositeSdCachedTable extends \Composite\DB\AbstractCachedTable imple
     {
         return array_map(
             fn (array $data) => TestCompositeSdEntity::fromArray($data),
-            $this->findAllCachedInternal(
+            $this->_findAllCached(
                 'user_id = :user_id',
                 ['user_id' => $userId],
             )
@@ -60,7 +60,7 @@ class TestCompositeSdCachedTable extends \Composite\DB\AbstractCachedTable imple
 
     public function countAllByUser(int $userId): int
     {
-        return $this->countAllCachedInternal(
+        return $this->_countAllCached(
             'user_id = :user_id',
             ['user_id' => $userId],
         );
