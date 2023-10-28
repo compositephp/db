@@ -282,7 +282,7 @@ abstract class AbstractCachedTable extends AbstractTable
         return str_replace(
             array_map(fn (string $key): string => ':' . $key, array_keys($where->params)),
             array_values($where->params),
-            $where->string,
+            $where->condition,
         );
     }
 }

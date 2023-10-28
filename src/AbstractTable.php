@@ -180,7 +180,7 @@ abstract class AbstractTable
         if (is_array($where)) {
             $this->buildWhere($query, $where);
         } else {
-            $query->where($where->string);
+            $query->where($where->condition);
             foreach ($where->params as $param => $value) {
                 $query->setParameter($param, $value);
             }
@@ -363,7 +363,7 @@ abstract class AbstractTable
                 }
             }
         } else {
-            $query->where($where->string);
+            $query->where($where->condition);
             foreach ($where->params as $param => $value) {
                 $query->setParameter($param, $value);
             }
