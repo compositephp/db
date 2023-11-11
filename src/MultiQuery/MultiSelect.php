@@ -12,6 +12,10 @@ class MultiSelect
 {
     private readonly QueryBuilder $queryBuilder;
 
+    /**
+     * @param array<string, mixed>|array<string|int> $condition
+     * @throws DbException
+     */
     public function __construct(
         Connection $connection,
         TableConfig $tableConfig,
@@ -32,7 +36,7 @@ class MultiSelect
             }
             /** @var \Composite\Entity\Columns\AbstractColumn $pkColumn */
             $pkColumn = reset($pkColumns);
-            $preparedPkValues = array_map(fn ($pk) => $pkColumn->uncast($pk), $condition);
+            $preparedPkValues = array_map(fn ($pk) => (string)$pkColumn->uncast($pk), $condition);
             $query->andWhere($query->expr()->in($pkColumn->name, $preparedPkValues));
         } else {
             $expressions = [];
