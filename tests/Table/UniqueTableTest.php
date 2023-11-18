@@ -3,7 +3,6 @@
 namespace Composite\DB\Tests\Table;
 
 use Composite\DB\AbstractTable;
-use Composite\DB\TableConfig;
 use Composite\DB\Tests\Helpers;
 use Composite\DB\Tests\TestStand\Entities;
 use Composite\DB\Tests\TestStand\Tables;
