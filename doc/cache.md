@@ -46,7 +46,7 @@ class PostsTable extends AbstractCachedTable
 
     public function findByPk(int $id): ?Post
     {
-        return $this->createEntity($this->_findByPkCached($id));
+        return $this->_findByPkCached($id);
     }
     
     /**
@@ -54,9 +54,7 @@ class PostsTable extends AbstractCachedTable
     */
     public function findAllFeatured(): array
     {
-        return $this->createEntities($this->_findAll(
-            ['is_featured' => true],
-        ));
+        return $this->_findAll(['is_featured' => true]);
     }
     
     public function countAllFeatured(): int

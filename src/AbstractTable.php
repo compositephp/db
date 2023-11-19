@@ -9,15 +9,13 @@ use Composite\Entity\AbstractEntity;
 use Composite\DB\Exceptions\DbException;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
-use Doctrine\DBAL\Query\QueryBuilder;
 use Ramsey\Uuid\UuidInterface;
 
 abstract class AbstractTable
 {
-    private const COMPARISON_SIGNS = ['=', '!=', '>', '<', '>=', '<=', '<>'];
+    use SelectRawTrait;
 
     protected readonly TableConfig $config;
-    private ?QueryBuilder $selectQuery = null;
 
     abstract protected function getConfig(): TableConfig;
 
@@ -189,10 +187,10 @@ abstract class AbstractTable
     }
 
     /**
-     * @return array<string, mixed>|null
      * @throws \Doctrine\DBAL\Exception
+     * @return AbstractEntity|null
      */
-    protected function _findByPk(mixed $pk): ?array
+    protected function _findByPk(mixed $pk): mixed
     {
         $where = $this->getPkCondition($pk);
         return $this->_findOne($where);
@@ -201,55 +199,54 @@ abstract class AbstractTable
     /**
      * @param array<string, mixed>|Where $where
      * @param array<string, string>|string $orderBy
-     * @return array<string, mixed>|null
+     * @return AbstractEntity|null
      * @throws \Doctrine\DBAL\Exception
      */
-    protected function _findOne(array|Where $where, array|string $orderBy = []): ?array
+    protected function _findOne(array|Where $where, array|string $orderBy = []): mixed
     {
-        $query = $this->select();
-        $this->buildWhere($query, $where);
-        $this->applyOrderBy($query, $orderBy);
-        return $query->fetchAssociative() ?: null;
+        return $this->createEntity($this->_findOneRaw($where, $orderBy));
     }
 
     /**
      * @param array<int|string|array<string,mixed>> $pkList
-     * @return array<array<string, mixed>>
+     * @return array<AbstractEntity>| array<array-key, AbstractEntity>
      * @throws DbException
      * @throws \Doctrine\DBAL\Exception
      */
-    protected function _findMulti(array $pkList): array
+    protected function _findMulti(array $pkList, ?string $keyColumnName = null): array
     {
         if (!$pkList) {
             return [];
         }
         $multiSelect = new MultiSelect($this->getConnection(), $this->config, $pkList);
-        return $multiSelect->getQueryBuilder()->executeQuery()->fetchAllAssociative();
+        return $this->createEntities(
+            $multiSelect->getQueryBuilder()->executeQuery()->fetchAllAssociative(),
+            $keyColumnName,
+        );
     }
 
     /**
      * @param array<string, mixed>|Where $where
      * @param array<string, string>|string $orderBy
-     * @return list<array<string,mixed>>
-     * @throws \Doctrine\DBAL\Exception
+     * @return array<AbstractEntity>| array<array-key, AbstractEntity>
      */
     protected function _findAll(
         array|Where $where = [],
         array|string $orderBy = [],
         ?int $limit = null,
         ?int $offset = null,
+        ?string $keyColumnName = null,
     ): array
     {
-        $query = $this->select();
-        $this->buildWhere($query, $where);
-        $this->applyOrderBy($query, $orderBy);
-        if ($limit > 0) {
-            $query->setMaxResults($limit);
-        }
-        if ($offset > 0) {
-            $query->setFirstResult($offset);
-        }
-        return $query->executeQuery()->fetchAllAssociative();
+        return $this->createEntities(
+            data: $this->_findAllRaw(
+                where: $where,
+                orderBy: $orderBy,
+                limit: $limit,
+                offset: $offset,
+            ),
+            keyColumnName: $keyColumnName,
+        );
     }
 
     final protected function createEntity(mixed $data): mixed
@@ -279,13 +276,18 @@ abstract class AbstractTable
             $entityClass = $this->config->entityClass;
             $result = [];
             foreach ($data as $datum) {
-                if (!is_array($datum)) {
-                    continue;
-                }
-                if ($keyColumnName && isset($datum[$keyColumnName])) {
-                    $result[$datum[$keyColumnName]] = $entityClass::fromArray($datum);
-                } else {
-                    $result[] = $entityClass::fromArray($datum);
+                if (is_array($datum)) {
+                    if ($keyColumnName && isset($datum[$keyColumnName])) {
+                        $result[$datum[$keyColumnName]] = $entityClass::fromArray($datum);
+                    } else {
+                        $result[] = $entityClass::fromArray($datum);
+                    }
+                } elseif ($datum instanceof $this->config->entityClass) {
+                    if ($keyColumnName && property_exists($datum, $keyColumnName)) {
+                        $result[$datum->{$keyColumnName}] = $datum;
+                    } else {
+                        $result[] = $datum;
+                    }
                 }
             }
         } catch (\Throwable) {
@@ -316,60 +318,6 @@ abstract class AbstractTable
         return $condition;
     }
 
-    protected function select(string $select = '*'): QueryBuilder
-    {
-        if ($this->selectQuery === null) {
-            $this->selectQuery = $this->getConnection()->createQueryBuilder()->from($this->getTableName());
-        }
-        return (clone $this->selectQuery)->select($select);
-    }
-
-    /**
-     * @param array<string, mixed>|Where $where
-     */
-    private function buildWhere(QueryBuilder $query, array|Where $where): void
-    {
-        if (is_array($where)) {
-            foreach ($where as $column => $value) {
-                if ($value instanceof \BackedEnum) {
-                    $value = $value->value;
-                } elseif ($value instanceof \UnitEnum) {
-                    $value = $value->name;
-                }
-
-                if (is_null($value)) {
-                    $query->andWhere($column . ' IS NULL');
-                } elseif (is_array($value) && count($value) === 2 && \in_array($value[0], self::COMPARISON_SIGNS)) {
-                    $comparisonSign = $value[0];
-                    $comparisonValue = $value[1];
-
-                    // Handle special case of "!= null"
-                    if ($comparisonSign === '!=' && is_null($comparisonValue)) {
-                        $query->andWhere($column . ' IS NOT NULL');
-                    } else {
-                        $query->andWhere($column . ' ' . $comparisonSign . ' :' . $column)
-                            ->setParameter($column, $comparisonValue);
-                    }
-                } elseif (is_array($value)) {
-                    $placeholders = [];
-                    foreach ($value as $index => $val) {
-                        $placeholders[] = ':' . $column . $index;
-                        $query->setParameter($column . $index, $val);
-                    }
-                    $query->andWhere($column . ' IN(' . implode(', ', $placeholders) . ')');
-                } else {
-                    $query->andWhere($column . ' = :' . $column)
-                        ->setParameter($column, $value);
-                }
-            }
-        } else {
-            $query->where($where->condition);
-            foreach ($where->params as $param => $value) {
-                $query->setParameter($param, $value);
-            }
-        }
-    }
-
     private function checkUpdatedAt(AbstractEntity $entity): void
     {
         if ($this->config->hasUpdatedAt() && property_exists($entity, 'updated_at') && $entity->updated_at === null) {
@@ -391,29 +339,5 @@ abstract class AbstractTable
             }
         }
         return $data;
-    }
-
-    /**
-     * @param array<string, string>|string $orderBy
-     */
-    private function applyOrderBy(QueryBuilder $query, string|array $orderBy): void
-    {
-        if (!$orderBy) {
-            return;
-        }
-        if (is_array($orderBy)) {
-            foreach ($orderBy as $column => $direction) {
-                $query->addOrderBy($column, $direction);
-            }
-        } else {
-            foreach (explode(',', $orderBy) as $orderByPart) {
-                $orderByPart = trim($orderByPart);
-                if (preg_match('/(.+)\s(asc|desc)$/i', $orderByPart, $orderByPartMatch)) {
-                    $query->addOrderBy($orderByPartMatch[1], $orderByPartMatch[2]);
-                } else {
-                    $query->addOrderBy($orderByPart);
-                }
-            }
-        }
     }
 }

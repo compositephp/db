@@ -33,7 +33,7 @@ class TestUniqueCachedTable extends AbstractCachedTable implements IUniqueTable
 
     public function findByPk(UuidInterface $id): ?TestUniqueEntity
     {
-        return $this->createEntity($this->_findByPk($id));
+        return $this->_findByPk($id);
     }
 
     /**
@@ -41,9 +41,7 @@ class TestUniqueCachedTable extends AbstractCachedTable implements IUniqueTable
      */
     public function findAllByName(string $name): array
     {
-        return $this->createEntities($this->_findAllCached(
-            new Where('name = :name', ['name' => $name])
-        ));
+        return $this->_findAllCached(new Where('name = :name', ['name' => $name]));
     }
 
     public function countAllByName(string $name): int

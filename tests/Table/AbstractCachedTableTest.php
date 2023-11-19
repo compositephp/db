@@ -272,8 +272,8 @@ final class AbstractCachedTableTest extends \PHPUnit\Framework\TestCase
         $table->save($e1);
         $table->save($e2);
 
-        $multi1 = $table->findMulti([$e1->id]);
-        $this->assertEquals($e1, $multi1[0]);
+        $multi1 = $table->findMulti([$e1->id], 'id');
+        $this->assertEquals($e1, $multi1[$e1->id]);
 
         $multi2 = $table->findMulti([$e1->id, $e2->id]);
         $this->assertEquals($e1, $multi2[0]);

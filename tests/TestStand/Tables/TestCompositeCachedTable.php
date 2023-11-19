@@ -30,10 +30,10 @@ class TestCompositeCachedTable extends \Composite\DB\AbstractCachedTable impleme
 
     public function findOne(int $user_id, int $post_id): ?TestCompositeEntity
     {
-        return $this->createEntity($this->_findOneCached([
+        return $this->_findOneCached([
             'user_id' => $user_id,
             'post_id' => $post_id,
-        ]));
+        ]);
     }
 
     /**
@@ -41,10 +41,7 @@ class TestCompositeCachedTable extends \Composite\DB\AbstractCachedTable impleme
      */
     public function findAllByUser(int $userId): array
     {
-        return array_map(
-            fn (array $data) => TestCompositeEntity::fromArray($data),
-            $this->_findAllCached(['user_id' => $userId])
-        );
+        return $this->_findAllCached(['user_id' => $userId]);
     }
 
     public function countAllByUser(int $userId): int

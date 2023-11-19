@@ -21,7 +21,7 @@ class TestUpdateAtTable extends AbstractTable
 
     public function findByPk(string $id): ?TestUpdatedAtEntity
     {
-        return $this->createEntity($this->_findByPk($id));
+        return $this->_findByPk($id);
     }
 
     public function init(): bool

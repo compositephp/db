@@ -40,12 +40,12 @@ class TestAutoincrementCachedTable extends AbstractCachedTable implements IAutoi
 
     public function findByPk(int $id): ?TestAutoincrementEntity
     {
-        return $this->createEntity($this->_findByPkCached($id));
+        return $this->_findByPkCached($id);
     }
 
     public function findOneByName(string $name): ?TestAutoincrementEntity
     {
-        return $this->createEntity($this->_findOneCached(['name' => $name]));
+        return $this->_findOneCached(['name' => $name]);
     }
 
     public function delete(TestAutoincrementEntity|AbstractEntity &$entity): void
@@ -61,9 +61,7 @@ class TestAutoincrementCachedTable extends AbstractCachedTable implements IAutoi
      */
     public function findAllByName(string $name): array
     {
-        return $this->createEntities($this->_findAllCached(
-            new Where('name = :name', ['name' => $name])
-        ));
+        return $this->_findAllCached(new Where('name = :name', ['name' => $name]));
     }
 
     /**
@@ -71,11 +69,11 @@ class TestAutoincrementCachedTable extends AbstractCachedTable implements IAutoi
      */
     public function findRecent(int $limit, int $offset): array
     {
-        return $this->createEntities($this->_findAll(
+        return $this->_findAll(
             orderBy: ['id' => 'DESC'],
             limit: $limit,
             offset: $offset,
-        ));
+        );
     }
 
     public function countAllByName(string $name): int
@@ -86,9 +84,9 @@ class TestAutoincrementCachedTable extends AbstractCachedTable implements IAutoi
     /**
      * @return TestAutoincrementEntity[]
      */
-    public function findMulti(array $ids): array
+    public function findMulti(array $ids, ?string $keyColumnName = null): array
     {
-        return $this->createEntities($this->_findMultiCached($ids));
+        return $this->_findMultiCached(ids: $ids, keyColumnName: $keyColumnName);
     }
 
     public function truncate(): void
