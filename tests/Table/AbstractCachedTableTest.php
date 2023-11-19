@@ -7,6 +7,7 @@ use Composite\DB\AbstractTable;
 use Composite\DB\Exceptions\DbException;
 use Composite\DB\Tests\TestStand\Entities;
 use Composite\DB\Tests\TestStand\Tables;
+use Composite\DB\Where;
 use Composite\Entity\AbstractEntity;
 use Composite\DB\Tests\Helpers;
 use Ramsey\Uuid\Uuid;
@@ -57,29 +58,32 @@ final class AbstractCachedTableTest extends \PHPUnit\Framework\TestCase
     {
         return [
             [
-                '',
                 [],
                 'sqlite.TestAutoincrement.v1.c.all',
             ],
             [
-                'name = :name',
-                ['name' => 'John'],
+                new Where('name = :name', ['name' => 'John']),
                 'sqlite.TestAutoincrement.v1.c.name_eq_john',
             ],
             [
-                '     name        =     :name    ',
                 ['name' => 'John'],
+                'sqlite.TestAutoincrement.v1.c.name_john',
+            ],
+            [
+                new Where('     name        =     :name    ', ['name' => 'John']),
                 'sqlite.TestAutoincrement.v1.c.name_eq_john',
             ],
             [
-                'name=:name',
-                ['name' => 'John'],
+                new Where('name=:name', ['name' => 'John']),
                 'sqlite.TestAutoincrement.v1.c.name_eq_john',
             ],
             [
-                'name = :name AND id > :id',
-                ['name' => 'John', 'id' => 10],
+                new Where('name = :name AND id > :id', ['name' => 'John', 'id' => 10]),
                 'sqlite.TestAutoincrement.v1.c.name_eq_john_and_id_gt_10',
+            ],
+            [
+                ['name' => 'John', 'id' => ['>', 10]],
+                'sqlite.TestAutoincrement.v1.c.name_john_id_gt_10',
             ],
         ];
     }
@@ -87,11 +91,11 @@ final class AbstractCachedTableTest extends \PHPUnit\Framework\TestCase
     /**
      * @dataProvider getCountCacheKey_dataProvider
      */
-    public function test_getCountCacheKey(string $whereString, array $whereParams, string $expected): void
+    public function test_getCountCacheKey(array|Where $where, string $expected): void
     {
         $table = new Tables\TestAutoincrementCachedTable(Helpers\CacheHelper::getCache());
         $reflectionMethod = new \ReflectionMethod($table, 'getCountCacheKey');
-        $actual = $reflectionMethod->invoke($table, $whereString, $whereParams);
+        $actual = $reflectionMethod->invoke($table, $where);
         $this->assertEquals($expected, $actual);
     }
 
@@ -99,43 +103,55 @@ final class AbstractCachedTableTest extends \PHPUnit\Framework\TestCase
     {
         return [
             [
-                '',
                 [],
                 [],
                 null,
                 'sqlite.TestAutoincrement.v1.l.all',
             ],
             [
-                '',
                 [],
                 [],
                 10,
                 'sqlite.TestAutoincrement.v1.l.all.limit_10',
             ],
             [
-                '',
                 [],
                 ['id' => 'DESC'],
                 10,
                 'sqlite.TestAutoincrement.v1.l.all.ob_id_desc.limit_10',
             ],
             [
-                'name = :name',
-                ['name' => 'John'],
+                new Where('name = :name', ['name' => 'John']),
                 [],
                 null,
                 'sqlite.TestAutoincrement.v1.l.name_eq_john',
             ],
             [
-                'name = :name AND id > :id',
-                ['name' => 'John', 'id' => 10],
+                ['name' => 'John'],
+                [],
+                null,
+                'sqlite.TestAutoincrement.v1.l.name_john',
+            ],
+            [
+                new Where('name = :name', ['name' => 'John']),
+                [],
+                null,
+                'sqlite.TestAutoincrement.v1.l.name_eq_john',
+            ],
+            [
+                new Where('name = :name AND id > :id', ['name' => 'John', 'id' => 10]),
                 [],
                 null,
                 'sqlite.TestAutoincrement.v1.l.name_eq_john_and_id_gt_10',
             ],
             [
-                'name = :name AND id > :id',
-                ['name' => 'John', 'id' => 10],
+                ['name' => 'John', 'id' => ['>', 10]],
+                [],
+                null,
+                'sqlite.TestAutoincrement.v1.l.name_john_id_gt_10',
+            ],
+            [
+                new Where('name = :name AND id > :id', ['name' => 'John', 'id' => 10]),
                 ['id' => 'ASC'],
                 20,
                 'bbcf331b765b682da02c4d21dbaa3342bf2c3f18', //sha1('sqlite.TestAutoincrement.v1.l.name_eq_john_and_id_gt_10.ob_id_asc.limit_20')
@@ -146,11 +162,11 @@ final class AbstractCachedTableTest extends \PHPUnit\Framework\TestCase
     /**
      * @dataProvider getListCacheKey_dataProvider
      */
-    public function test_getListCacheKey(string $whereString, array $whereArray, array $orderBy, ?int $limit, string $expected): void
+    public function test_getListCacheKey(array|Where $where, array $orderBy, ?int $limit, string $expected): void
     {
         $table = new Tables\TestAutoincrementCachedTable(Helpers\CacheHelper::getCache());
         $reflectionMethod = new \ReflectionMethod($table, 'getListCacheKey');
-        $actual = $reflectionMethod->invoke($table, $whereString, $whereArray, $orderBy, $limit);
+        $actual = $reflectionMethod->invoke($table, $where, $orderBy, $limit);
         $this->assertEquals($expected, $actual);
     }
 
@@ -256,8 +272,8 @@ final class AbstractCachedTableTest extends \PHPUnit\Framework\TestCase
         $table->save($e1);
         $table->save($e2);
 
-        $multi1 = $table->findMulti([$e1->id]);
-        $this->assertEquals($e1, $multi1[0]);
+        $multi1 = $table->findMulti([$e1->id], 'id');
+        $this->assertEquals($e1, $multi1[$e1->id]);
 
         $multi2 = $table->findMulti([$e1->id, $e2->id]);
         $this->assertEquals($e1, $multi2[0]);

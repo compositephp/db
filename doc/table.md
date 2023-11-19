@@ -38,7 +38,7 @@ class UsersTable extends AbstractTable
 
     public function findOne(int $id): ?User
     {
-        return $this->createEntity($this->findOneInternal($id));
+        return $this->_findByPk($id);
     }
 
     /**
@@ -46,12 +46,12 @@ class UsersTable extends AbstractTable
      */
     public function findAll(): array
     {
-        return $this->createEntities($this->findAllInternal());
+        return $this->_findAll();
     }
 
     public function countAll(): int
     {
-        return $this->countAllInternal();
+        return $this->_countAll();
     }
 }
 ```
@@ -67,15 +67,30 @@ Example with internal helper:
  */
 public function findAllActiveAdults(): array
 {
-    $rows = $this->findAllInternal(
-        'age > :age AND status = :status',
-        ['age' => 18, 'status' => Status::ACTIVE->name],
+    return $this->_findAll(
+        new Where(
+            'age > :age AND status = :status',
+            ['age' => 18, 'status' => Status::ACTIVE->name],
+        )
     );
-    return $this->createEntities($rows);
 }
 ```
 
-Example with pure query builder
+Or it might be simplified to:
+```php
+/**
+ * @return User[]
+ */
+public function findAllActiveAdults(): array
+{
+    return $this->_findAll([
+        'age' => ['>', 18],
+        'status' => Status:ACTIVE,
+    ]);
+}
+```
+
+Or you can use standard Doctrine QueryBuilder
 ```php
 /**
  * @return User[]

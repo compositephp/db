@@ -19,18 +19,29 @@ class CombinedTransaction
      */
     public function save(AbstractTable $table, AbstractEntity &$entity): void
     {
-        try {
-            $connectionName = $table->getConnectionName();
-            if (empty($this->transactions[$connectionName])) {
-                $connection = ConnectionManager::getConnection($connectionName);
-                $connection->beginTransaction();
-                $this->transactions[$connectionName] = $connection;
-            }
+        $this->doInTransaction($table, function () use ($table, &$entity) {
             $table->save($entity);
-        } catch (\Throwable $e) {
-            $this->rollback();
-            throw new Exceptions\DbException($e->getMessage(), 500, $e);
-        }
+        });
+    }
+
+    /**
+     * @param AbstractTable $table
+     * @param AbstractEntity[] $entities
+     * @throws DbException
+     */
+    public function saveMany(AbstractTable $table, array $entities): void
+    {
+        $this->doInTransaction($table, fn () => $table->saveMany($entities));
+    }
+
+    /**
+     * @param AbstractTable $table
+     * @param AbstractEntity[] $entities
+     * @throws DbException
+     */
+    public function deleteMany(AbstractTable $table, array $entities): void
+    {
+        $this->doInTransaction($table, fn () => $table->deleteMany($entities));
     }
 
     /**
@@ -38,18 +49,9 @@ class CombinedTransaction
      */
     public function delete(AbstractTable $table, AbstractEntity &$entity): void
     {
-        try {
-            $connectionName = $table->getConnectionName();
-            if (empty($this->transactions[$connectionName])) {
-                $connection = ConnectionManager::getConnection($connectionName);
-                $connection->beginTransaction();
-                $this->transactions[$connectionName] = $connection;
-            }
+        $this->doInTransaction($table, function () use ($table, &$entity) {
             $table->delete($entity);
-        } catch (\Throwable $e) {
-            $this->rollback();
-            throw new Exceptions\DbException($e->getMessage(), 500, $e);
-        }
+        });
     }
 
     public function rollback(): void
@@ -105,6 +107,22 @@ class CombinedTransaction
             return;
         }
         $this->cache->delete($this->lockKey);
+    }
+
+    private function doInTransaction(AbstractTable $table, callable $callback): void
+    {
+        try {
+            $connectionName = $table->getConnectionName();
+            if (empty($this->transactions[$connectionName])) {
+                $connection = ConnectionManager::getConnection($connectionName);
+                $connection->beginTransaction();
+                $this->transactions[$connectionName] = $connection;
+            }
+            $callback();
+        } catch (\Throwable $e) {
+            $this->rollback();
+            throw new Exceptions\DbException($e->getMessage(), 500, $e);
+        }
     }
 
     /**

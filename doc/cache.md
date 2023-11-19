@@ -6,7 +6,7 @@ To start using auto-cache feature you need:
 to `Composite\DB\AbstractCachedTable`
 3. Implement method `getFlushCacheKeys()`
 4. Change all internal select methods to their cached versions (example: `findByPkInternal()` 
-to `findByPkCachedInternal()` etc.)
+to `_findByPkCached()` etc.)
 
 You can also generate cached version of your table with console command:
 
@@ -46,7 +46,7 @@ class PostsTable extends AbstractCachedTable
 
     public function findByPk(int $id): ?Post
     {
-        return $this->createEntity($this->findByPkInternalCached($id));
+        return $this->_findByPkCached($id);
     }
     
     /**
@@ -54,15 +54,12 @@ class PostsTable extends AbstractCachedTable
     */
     public function findAllFeatured(): array
     {
-        return $this->createEntities($this->findAllInternal(
-            'is_featured = :is_featured',
-            ['is_featured' => true],
-        ));
+        return $this->_findAll(['is_featured' => true]);
     }
     
     public function countAllFeatured(): int
     {
-        return $this->countAllCachedInternal(
+        return $this->_countAllCached(
             'is_featured = :is_featured',
             ['is_featured' => true],
         );

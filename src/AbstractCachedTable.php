@@ -2,13 +2,14 @@
 
 namespace Composite\DB;
 
-use Composite\DB\Exceptions\DbException;
 use Composite\Entity\AbstractEntity;
 use Psr\SimpleCache\CacheInterface;
 use Ramsey\Uuid\UuidInterface;
 
 abstract class AbstractCachedTable extends AbstractTable
 {
+    use SelectRawTrait;
+
     protected const CACHE_VERSION = 1;
 
     public function __construct(
@@ -93,59 +94,60 @@ abstract class AbstractCachedTable extends AbstractTable
     }
 
     /**
-     * @return array<string, mixed>|null
+     * @return AbstractEntity|null
      */
-    protected function findByPkCachedInternal(mixed $pk, null|int|\DateInterval $ttl = null): ?array
+    protected function _findByPkCached(mixed $pk, null|int|\DateInterval $ttl = null): mixed
     {
-        return $this->findOneCachedInternal($this->getPkCondition($pk), $ttl);
+        return $this->_findOneCached($this->getPkCondition($pk), $ttl);
     }
 
     /**
-     * @param array<string, mixed> $condition
+     * @param array<string, mixed> $where
      * @param int|\DateInterval|null $ttl
-     * @return array<string, mixed>|null
+     * @return AbstractEntity|null
      */
-    protected function findOneCachedInternal(array $condition, null|int|\DateInterval $ttl = null): ?array
+    protected function _findOneCached(array $where, null|int|\DateInterval $ttl = null): mixed
     {
-        return $this->getCached(
-            $this->getOneCacheKey($condition),
-            fn() => $this->findOneInternal($condition),
+        $row = $this->getCached(
+            $this->getOneCacheKey($where),
+            fn() => $this->_findOneRaw($where),
             $ttl,
-        ) ?: null;
+        );
+        return $this->createEntity($row);
     }
 
     /**
-     * @param array<string, mixed> $whereParams
+     * @param array<string, mixed>|Where $where
      * @param array<string, string>|string $orderBy
-     * @return array<string, mixed>[]
+     * @return array<AbstractEntity>|array<array-key, AbstractEntity>
      */
-    protected function findAllCachedInternal(
-        string $whereString = '',
-        array $whereParams = [],
+    protected function _findAllCached(
+        array|Where $where = [],
         array|string $orderBy = [],
         ?int $limit = null,
         null|int|\DateInterval $ttl = null,
+        ?string $keyColumnName = null,
     ): array
     {
-        return $this->getCached(
-            $this->getListCacheKey($whereString, $whereParams, $orderBy, $limit),
-            fn() => $this->findAllInternal(whereString: $whereString, whereParams: $whereParams, orderBy: $orderBy, limit: $limit),
+        $rows = $this->getCached(
+            $this->getListCacheKey($where, $orderBy, $limit),
+            fn() => $this->_findAllRaw(where: $where, orderBy: $orderBy, limit: $limit),
             $ttl,
         );
+        return $this->createEntities($rows, $keyColumnName);
     }
 
     /**
-     * @param array<string, mixed> $whereParams
+     * @param array<string, mixed>|Where $where
      */
-    protected function countAllCachedInternal(
-        string $whereString = '',
-        array $whereParams = [],
+    protected function _countByAllCached(
+        array|Where $where = [],
         null|int|\DateInterval $ttl = null,
     ): int
     {
         return (int)$this->getCached(
-            $this->getCountCacheKey($whereString, $whereParams),
-            fn() => $this->countAllInternal(whereString: $whereString, whereParams: $whereParams),
+            $this->getCountCacheKey($where),
+            fn() => $this->_countAll(where: $where),
             $ttl,
         );
     }
@@ -166,10 +168,14 @@ abstract class AbstractCachedTable extends AbstractTable
     /**
      * @param mixed[] $ids
      * @param int|\DateInterval|null $ttl
-     * @return array<array<string, mixed>>
+     * @return array<AbstractEntity>|array<array-key, AbstractEntity>
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
-    protected function findMultiCachedInternal(array $ids, null|int|\DateInterval $ttl = null): array
+    protected function _findMultiCached(
+        array $ids,
+        null|int|\DateInterval $ttl = null,
+        ?string $keyColumnName = null,
+    ): array
     {
         $result = $cacheKeys = $foundIds = [];
         foreach ($ids as $id) {
@@ -188,11 +194,11 @@ abstract class AbstractCachedTable extends AbstractTable
         }
         $ids = array_diff($ids, $foundIds);
         foreach ($ids as $id) {
-            if ($row = $this->findByPkCachedInternal($id, $ttl)) {
+            if ($row = $this->_findByPkCached($id, $ttl)) {
                 $result[] = $row;
             }
         }
-        return $result;
+        return $this->createEntities($result, $keyColumnName);
     }
 
     /**
@@ -209,37 +215,35 @@ abstract class AbstractCachedTable extends AbstractTable
     }
 
     /**
-     * @param array<string, mixed> $whereParams
+     * @param array<string, mixed>|Where $where
      * @param array<string, string>|string $orderBy
      */
     protected function getListCacheKey(
-        string $whereString = '',
-        array $whereParams = [],
+        array|Where $where = [],
         array|string $orderBy = [],
         ?int $limit = null
     ): string
     {
-        $wherePart = $this->prepareWhereKey($whereString, $whereParams);
+        $wherePart = is_array($where) ? $where : $this->prepareWhereKey($where);
         return $this->buildCacheKey(
             'l',
-            $wherePart ?? 'all',
+            $wherePart ?: 'all',
             $orderBy ? ['ob' => $orderBy] : null,
             $limit ? ['limit' => $limit] : null,
         );
     }
 
     /**
-     * @param array<string, mixed> $whereParams
+     * @param array<string, mixed>|Where $where
      */
     protected function getCountCacheKey(
-        string $whereString = '',
-        array $whereParams = [],
+        array|Where $where = [],
     ): string
     {
-        $wherePart = $this->prepareWhereKey($whereString, $whereParams);
+        $wherePart = is_array($where) ? $where : $this->prepareWhereKey($where);
         return $this->buildCacheKey(
             'c',
-            $wherePart ?? 'all',
+            $wherePart ?: 'all',
         );
     }
 
@@ -274,24 +278,18 @@ abstract class AbstractCachedTable extends AbstractTable
 
     private function formatStringForCacheKey(string $string): string
     {
-        $string = mb_strtolower($string);
+        $string = strtolower($string);
         $string = str_replace(['!=', '<>', '>', '<', '='], ['_not_', '_not_', '_gt_', '_lt_', '_eq_'], $string);
         $string =  (string)preg_replace('/\W/', '_', $string);
         return trim((string)preg_replace('/_+/', '_', $string), '_');
     }
 
-    /**
-     * @param array<string, mixed> $whereParams
-     */
-    private function prepareWhereKey(string $whereString, array $whereParams): ?string
+    private function prepareWhereKey(Where $where): string
     {
-        if (!$whereString) {
-            return null;
-        }
         return str_replace(
-            array_map(fn (string $key): string => ':' . $key, array_keys($whereParams)),
-            array_values($whereParams),
-            $whereString,
+            array_map(fn (string $key): string => ':' . $key, array_keys($where->params)),
+            array_values($where->params),
+            $where->condition,
         );
     }
 }

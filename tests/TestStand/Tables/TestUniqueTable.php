@@ -4,8 +4,10 @@ namespace Composite\DB\Tests\TestStand\Tables;
 
 use Composite\DB\AbstractTable;
 use Composite\DB\TableConfig;
+use Composite\DB\Tests\TestStand\Entities\Enums\TestBackedEnum;
 use Composite\DB\Tests\TestStand\Entities\TestUniqueEntity;
 use Composite\DB\Tests\TestStand\Interfaces\IUniqueTable;
+use Composite\DB\Where;
 use Composite\Entity\AbstractEntity;
 use Ramsey\Uuid\UuidInterface;
 
@@ -32,7 +34,7 @@ class TestUniqueTable extends AbstractTable implements IUniqueTable
 
     public function findByPk(UuidInterface $id): ?TestUniqueEntity
     {
-        return $this->createEntity($this->findByPkInternal($id));
+        return $this->_findByPk($id);
     }
 
     /**
@@ -40,18 +42,12 @@ class TestUniqueTable extends AbstractTable implements IUniqueTable
      */
     public function findAllByName(string $name): array
     {
-        return $this->createEntities($this->findAllInternal(
-            'name = :name',
-            ['name' => $name],
-        ));
+        return $this->_findAll(['name' => $name, 'status' => TestBackedEnum::ACTIVE]);
     }
 
     public function countAllByName(string $name): int
     {
-        return $this->countAllInternal(
-            'name = :name',
-            ['name' => $name],
-        );
+        return $this->_countAll(new Where('name = :name', ['name' => $name]));
     }
 
     public function init(): bool
@@ -62,6 +58,7 @@ class TestUniqueTable extends AbstractTable implements IUniqueTable
             (
                 `id` VARCHAR(255) NOT NULL CONSTRAINT TestUnique_pk PRIMARY KEY,
                 `name` VARCHAR(255) NOT NULL,
+                `status` VARCHAR(16) DEFAULT 'Active' NOT NULL,
                 `created_at` TIMESTAMP NOT NULL
             );
             "

@@ -20,7 +20,7 @@ final class CombinedTransactionTest extends \PHPUnit\Framework\TestCase
         $e1 = new Entities\TestAutoincrementEntity(name: 'Foo');
         $saveTransaction->save($autoIncrementTable, $e1);
 
-        $e2 = new Entities\TestCompositeEntity(user_id: $e1->id, post_id: mt_rand(1, 1000), message: 'Bar');
+        $e2 = new Entities\TestCompositeEntity(user_id: $e1->id, post_id: mt_rand(1, 1000000), message: 'Bar');
         $saveTransaction->save($compositeTable, $e2);
 
         $saveTransaction->commit();
@@ -35,6 +35,32 @@ final class CombinedTransactionTest extends \PHPUnit\Framework\TestCase
 
         $this->assertNull($autoIncrementTable->findByPk($e1->id));
         $this->assertNull($compositeTable->findOne($e2->user_id, $e2->post_id));
+    }
+
+    public function test_saveDeleteMany(): void
+    {
+        $autoIncrementTable = new Tables\TestAutoincrementTable();
+        $compositeTable = new Tables\TestCompositeTable();
+
+        $saveTransaction = new CombinedTransaction();
+
+        $e1 = new Entities\TestAutoincrementEntity(name: 'Foo');
+        $saveTransaction->save($autoIncrementTable, $e1);
+
+        $e2 = new Entities\TestCompositeEntity(user_id: $e1->id, post_id: mt_rand(1, 1000000), message: 'Foo');
+        $e3 = new Entities\TestCompositeEntity(user_id: $e1->id, post_id: mt_rand(1, 1000000), message: 'Bar');
+        $saveTransaction->saveMany($compositeTable, [$e2, $e3]);
+
+        $saveTransaction->commit();
+
+        $this->assertNotNull($autoIncrementTable->findByPk($e1->id));
+        $this->assertNotNull($compositeTable->findOne($e2->user_id, $e2->post_id));
+        $this->assertNotNull($compositeTable->findOne($e3->user_id, $e3->post_id));
+
+        $deleteTransaction = new CombinedTransaction();
+        $deleteTransaction->delete($autoIncrementTable, $e1);
+        $deleteTransaction->deleteMany($compositeTable, [$e2, $e3]);
+        $deleteTransaction->commit();
     }
 
     public function test_transactionRollback(): void

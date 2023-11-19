@@ -43,7 +43,7 @@ class UsersTable extends \Composite\DB\AbstractTable
 
     public function findByPk(int $id): ?User
     {
-        return $this->createEntity($this->findByPkInternal($id));
+        return $this->_findByPk($id);
     }
 
     /**
@@ -51,17 +51,13 @@ class UsersTable extends \Composite\DB\AbstractTable
      */
     public function findAllActive(): array
     {
-        return $this->createEntities($this->findAllInternal(
-            'status = :status',
-            ['status' => Status::ACTIVE->name],
-        ));
+        return $this->_findAll(['status' => Status::ACTIVE]);
     }
 
     public function countAllActive(): int
     {
-        return $this->countAllInternal(
-            'status = :status',
-            ['status' => Status::ACTIVE->name],
+        return $this->_countAll(
+            ['status' => Status::ACTIVE],
         );
     }
 
