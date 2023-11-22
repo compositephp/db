@@ -77,7 +77,7 @@ The command examines the specific Entity and generates a [Table](https://github.
 This class acts as a gateway to a specific SQL table, providing user-friendly CRUD tools for interacting with SQL right off the bat.
 
 ```shell
-php cli.php composite:generate-table connection_name TableName 'App\Models\EntityName'
+php cli.php composite:generate-table 'App\Models\EntityName'
 ```
 
 | Argument  | Required | Description                                   |
