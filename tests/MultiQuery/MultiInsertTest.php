@@ -2,6 +2,7 @@
 
 namespace Composite\DB\Tests\MultiQuery;
 
+use Composite\DB\ConnectionManager;
 use Composite\DB\MultiQuery\MultiInsert;
 
 class MultiInsertTest extends \PHPUnit\Framework\TestCase
@@ -11,7 +12,8 @@ class MultiInsertTest extends \PHPUnit\Framework\TestCase
      */
     public function test_multiInsertQuery($tableName, $rows, $expectedSql, $expectedParameters)
     {
-        $multiInserter = new MultiInsert($tableName, $rows);
+        $connection = ConnectionManager::getConnection('sqlite');
+        $multiInserter = new MultiInsert($connection, $tableName, $rows);
 
         $this->assertEquals($expectedSql, $multiInserter->getSql());
         $this->assertEquals($expectedParameters, $multiInserter->getParameters());
@@ -31,7 +33,7 @@ class MultiInsertTest extends \PHPUnit\Framework\TestCase
                 [
                     ['a' => 'value1_1', 'b' => 'value2_1'],
                 ],
-                "INSERT INTO `testTable` (`a`, `b`) VALUES (:a0, :b0);",
+                'INSERT INTO "testTable" ("a", "b") VALUES (:a0, :b0);',
                 ['a0' => 'value1_1', 'b0' => 'value2_1']
             ],
             [
@@ -40,7 +42,7 @@ class MultiInsertTest extends \PHPUnit\Framework\TestCase
                     ['a' => 'value1_1', 'b' => 'value2_1'],
                     ['a' => 'value1_2', 'b' => 'value2_2']
                 ],
-                "INSERT INTO `testTable` (`a`, `b`) VALUES (:a0, :b0), (:a1, :b1);",
+                'INSERT INTO "testTable" ("a", "b") VALUES (:a0, :b0), (:a1, :b1);',
                 ['a0' => 'value1_1', 'b0' => 'value2_1', 'a1' => 'value1_2', 'b1' => 'value2_2']
             ],
             [
@@ -49,7 +51,7 @@ class MultiInsertTest extends \PHPUnit\Framework\TestCase
                     ['column1' => 'value1_1'],
                     ['column1' => 123]
                 ],
-                "INSERT INTO `testTable` (`column1`) VALUES (:column10), (:column11);",
+                'INSERT INTO "testTable" ("column1") VALUES (:column10), (:column11);',
                 ['column10' => 'value1_1', 'column11' => 123]
             ]
         ];

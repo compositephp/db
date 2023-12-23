@@ -48,7 +48,7 @@ class TestAutoincrementSdCachedTable extends AbstractCachedTable implements IAut
         return $this->_findOneCached(['name' => $name]);
     }
 
-    public function delete(TestAutoincrementSdEntity|AbstractEntity &$entity): void
+    public function delete(TestAutoincrementSdEntity|AbstractEntity $entity): void
     {
         if ($entity->name === 'Exception') {
             throw new \Exception('Test Exception');

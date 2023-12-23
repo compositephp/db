@@ -48,7 +48,7 @@ class TestAutoincrementCachedTable extends AbstractCachedTable implements IAutoi
         return $this->_findOneCached(['name' => $name]);
     }
 
-    public function delete(TestAutoincrementEntity|AbstractEntity &$entity): void
+    public function delete(TestAutoincrementEntity|AbstractEntity $entity): void
     {
         if ($entity->name === 'Exception') {
             throw new \Exception('Test Exception');

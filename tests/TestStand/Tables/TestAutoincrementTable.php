@@ -32,7 +32,7 @@ class TestAutoincrementTable extends AbstractTable implements IAutoincrementTabl
         return $this->_findOne(['name' => $name]);
     }
 
-    public function delete(AbstractEntity|TestAutoincrementEntity &$entity): void
+    public function delete(AbstractEntity|TestAutoincrementEntity $entity): void
     {
         if ($entity->name === 'Exception') {
             throw new \Exception('Test Exception');

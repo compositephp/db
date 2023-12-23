@@ -1,7 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace Composite\DB;
+namespace Composite\DB\Helpers;
 
+use Composite\DB\Where;
 use Doctrine\DBAL\Query\QueryBuilder;
 
 trait SelectRawTrait

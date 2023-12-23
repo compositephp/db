@@ -2,8 +2,14 @@
 
 namespace Composite\DB\MultiQuery;
 
+use Composite\DB\Helpers\DatabaseSpecificTrait;
+use Doctrine\DBAL\Connection;
+
 class MultiInsert
 {
+    use DatabaseSpecificTrait;
+
+    private Connection $connection;
     private string $sql = '';
     /** @var array<string, mixed> */
     private array $parameters = [];
@@ -12,13 +18,14 @@ class MultiInsert
      * @param string $tableName
      * @param list<array<string, mixed>> $rows
      */
-    public function __construct(string $tableName, array $rows) {
+    public function __construct(Connection $connection, string $tableName, array $rows) {
         if (!$rows) {
             return;
         }
+        $this->connection = $connection;
         $firstRow = reset($rows);
-        $columnNames = array_map(fn($columnName) => "`$columnName`", array_keys($firstRow));
-        $this->sql = "INSERT INTO `$tableName` (" . implode(', ', $columnNames) . ") VALUES ";
+        $columnNames = array_map(fn ($columnName) => $this->escapeIdentifier($columnName), array_keys($firstRow));
+        $this->sql = "INSERT INTO " . $this->escapeIdentifier($tableName)  . " (" . implode(', ', $columnNames) . ") VALUES ";
         $valuesSql = [];
 
         $index = 0;
@@ -46,5 +53,10 @@ class MultiInsert
     public function getParameters(): array
     {
         return $this->parameters;
+    }
+
+    private function getConnection(): Connection
+    {
+        return $this->connection;
     }
 }

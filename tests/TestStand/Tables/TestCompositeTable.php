@@ -15,7 +15,7 @@ class TestCompositeTable extends \Composite\DB\AbstractTable implements IComposi
         return TableConfig::fromEntitySchema(TestCompositeEntity::schema());
     }
 
-    public function save(AbstractEntity|TestCompositeEntity &$entity): void
+    public function save(AbstractEntity|TestCompositeEntity $entity): void
     {
         if ($entity->message === 'Exception') {
             throw new \Exception('Test Exception');
@@ -23,7 +23,7 @@ class TestCompositeTable extends \Composite\DB\AbstractTable implements IComposi
         parent::save($entity);
     }
 
-    public function delete(AbstractEntity|TestCompositeEntity &$entity): void
+    public function delete(AbstractEntity|TestCompositeEntity $entity): void
     {
         if ($entity->message === 'Exception') {
             throw new \Exception('Test Exception');

@@ -8,7 +8,7 @@ use Ramsey\Uuid\UuidInterface;
 
 abstract class AbstractCachedTable extends AbstractTable
 {
-    use SelectRawTrait;
+    use Helpers\SelectRawTrait;
 
     protected const CACHE_VERSION = 1;
 
@@ -26,7 +26,7 @@ abstract class AbstractCachedTable extends AbstractTable
     /**
      * @throws \Throwable
      */
-    public function save(AbstractEntity &$entity): void
+    public function save(AbstractEntity $entity): void
     {
         $cacheKeys = $this->collectCacheKeysByEntity($entity);
         parent::save($entity);
@@ -54,7 +54,7 @@ abstract class AbstractCachedTable extends AbstractTable
     /**
      * @throws \Throwable
      */
-    public function delete(AbstractEntity &$entity): void
+    public function delete(AbstractEntity $entity): void
     {
         $cacheKeys = $this->collectCacheKeysByEntity($entity);
         parent::delete($entity);

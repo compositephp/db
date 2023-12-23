@@ -2,20 +2,21 @@
 
 namespace Composite\DB;
 
+use Composite\DB\Exceptions\DbException;
 use Composite\DB\MultiQuery\MultiInsert;
 use Composite\DB\MultiQuery\MultiSelect;
-use Composite\Entity\Helpers\DateTimeHelper;
 use Composite\Entity\AbstractEntity;
-use Composite\DB\Exceptions\DbException;
+use Composite\Entity\Helpers\DateTimeHelper;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Ramsey\Uuid\UuidInterface;
 
 abstract class AbstractTable
 {
-    use SelectRawTrait;
+    use Helpers\SelectRawTrait;
+    use Helpers\DatabaseSpecificTrait;
 
     protected readonly TableConfig $config;
+
 
     abstract protected function getConfig(): TableConfig;
 
@@ -44,49 +45,51 @@ abstract class AbstractTable
      * @return void
      * @throws \Throwable
      */
-    public function save(AbstractEntity &$entity): void
+    public function save(AbstractEntity $entity): void
     {
         $this->config->checkEntity($entity);
         if ($entity->isNew()) {
             $connection = $this->getConnection();
             $this->checkUpdatedAt($entity);
 
-            $insertData = $this->formatData($entity->toArray());
+            $insertData = $this->prepareDataForSql($entity->toArray());
             $this->getConnection()->insert($this->getTableName(), $insertData);
 
-            if ($this->config->autoIncrementKey) {
-                $insertData[$this->config->autoIncrementKey] = intval($connection->lastInsertId());
-                $entity = $entity::fromArray($insertData);
-            } else {
-                $entity->resetChangedColumns();
+            if ($this->config->autoIncrementKey && ($lastInsertedId = $connection->lastInsertId())) {
+                $insertData[$this->config->autoIncrementKey] = intval($lastInsertedId);
+                $entity::schema()
+                    ->getColumn($this->config->autoIncrementKey)
+                    ->setValue($entity, $insertData[$this->config->autoIncrementKey]);
             }
+            $entity->resetChangedColumns($insertData);
         } else {
             if (!$changedColumns = $entity->getChangedColumns()) {
                 return;
             }
-            $connection = $this->getConnection();
-            $where = $this->getPkCondition($entity);
-
+            $changedColumns = $this->prepareDataForSql($changedColumns);
             if ($this->config->hasUpdatedAt() && property_exists($entity, 'updated_at')) {
                 $entity->updated_at = new \DateTimeImmutable();
                 $changedColumns['updated_at'] = DateTimeHelper::dateTimeToString($entity->updated_at);
             }
+            $whereParams = $this->getPkCondition($entity);
             if ($this->config->hasOptimisticLock()
                 && method_exists($entity, 'getVersion')
                 && method_exists($entity, 'incrementVersion')) {
-                $where['lock_version'] = $entity->getVersion();
+                $whereParams['lock_version'] = $entity->getVersion();
                 $entity->incrementVersion();
                 $changedColumns['lock_version'] = $entity->getVersion();
             }
-            $entityUpdated = $connection->update(
-                table: $this->getTableName(),
-                data: $changedColumns,
-                criteria: $where,
+            $updateString = implode(', ', array_map(fn ($key) => $this->escapeIdentifier($key) . "=?", array_keys($changedColumns)));
+            $whereString = implode(' AND ', array_map(fn ($key) => $this->escapeIdentifier($key) . "=?", array_keys($whereParams)));
+
+            $entityUpdated = (bool)$this->getConnection()->executeStatement(
+                sql: "UPDATE " . $this->escapeIdentifier($this->getTableName()) . " SET $updateString WHERE $whereString;",
+                params: array_merge(array_values($changedColumns), array_values($whereParams)),
             );
             if ($this->config->hasOptimisticLock() && !$entityUpdated) {
                 throw new Exceptions\LockException('Failed to update entity version, concurrency modification, rolling back.');
             }
-            $entity->resetChangedColumns();
+            $entity->resetChangedColumns($changedColumns);
         }
     }
 
@@ -101,7 +104,7 @@ abstract class AbstractTable
             if ($entity->isNew()) {
                 $this->config->checkEntity($entity);
                 $this->checkUpdatedAt($entity);
-                $rowsToInsert[] = $this->formatData($entity->toArray());
+                $rowsToInsert[] = $this->prepareDataForSql($entity->toArray());
                 unset($entities[$i]);
             }
         }
@@ -113,14 +116,15 @@ abstract class AbstractTable
             }
             if ($rowsToInsert) {
                 $chunks = array_chunk($rowsToInsert, 1000);
+                $connection = $this->getConnection();
                 foreach ($chunks as $chunk) {
                     $multiInsert = new MultiInsert(
+                        connection: $connection,
                         tableName: $this->getTableName(),
                         rows: $chunk,
                     );
                     if ($multiInsert->getSql()) {
-                        $stmt = $this->getConnection()->prepare($multiInsert->getSql());
-                        $stmt->executeQuery($multiInsert->getParameters());
+                        $connection->executeStatement($multiInsert->getSql(), $multiInsert->getParameters());
                     }
                 }
             }
@@ -135,7 +139,7 @@ abstract class AbstractTable
      * @param AbstractEntity $entity
      * @throws \Throwable
      */
-    public function delete(AbstractEntity &$entity): void
+    public function delete(AbstractEntity $entity): void
     {
         $this->config->checkEntity($entity);
         if ($this->config->hasSoftDelete()) {
@@ -144,8 +148,12 @@ abstract class AbstractTable
                 $this->save($entity);
             }
         } else {
-            $where = $this->getPkCondition($entity);
-            $this->getConnection()->delete($this->getTableName(), $where);
+            $whereParams = $this->getPkCondition($entity);
+            $whereString = implode(' AND ', array_map(fn ($key) => $this->escapeIdentifier($key) . "=?", array_keys($whereParams)));
+            $this->getConnection()->executeQuery(
+                sql: "DELETE FROM " . $this->escapeIdentifier($this->getTableName()) . " WHERE $whereString;",
+                params: array_values($whereParams),
+            );
         }
     }
 
@@ -192,8 +200,15 @@ abstract class AbstractTable
      */
     protected function _findByPk(mixed $pk): mixed
     {
-        $where = $this->getPkCondition($pk);
-        return $this->_findOne($where);
+        $whereParams = $this->getPkCondition($pk);
+        $whereString = implode(' AND ', array_map(fn ($key) => $this->escapeIdentifier($key) . "=?", array_keys($whereParams)));
+        $row = $this->getConnection()
+            ->executeQuery(
+                sql: "SELECT * FROM " . $this->escapeIdentifier($this->getTableName()) . " WHERE $whereString;",
+                params: array_values($whereParams),
+            )
+            ->fetchAssociative();
+        return $this->createEntity($row);
     }
 
     /**
@@ -304,7 +319,14 @@ abstract class AbstractTable
     {
         $condition = [];
         if ($data instanceof AbstractEntity) {
-            $data = $data->toArray();
+            if ($data->isNew()) {
+                $data = $data->toArray();
+            } else {
+                foreach ($this->config->primaryKeys as $key) {
+                    $condition[$key] = $data->getOldValue($key);
+                }
+                return $condition;
+            }
         }
         if (is_array($data)) {
             foreach ($this->config->primaryKeys as $key) {
@@ -323,21 +345,5 @@ abstract class AbstractTable
         if ($this->config->hasUpdatedAt() && property_exists($entity, 'updated_at') && $entity->updated_at === null) {
             $entity->updated_at = new \DateTimeImmutable();
         }
-    }
-
-    /**
-     * @param array<string, mixed> $data
-     * @return array<string, mixed>
-     * @throws \Doctrine\DBAL\Exception
-     */
-    private function formatData(array $data): array
-    {
-        $supportsBoolean = $this->getConnection()->getDatabasePlatform() instanceof PostgreSQLPlatform;
-        foreach ($data as $columnName => $value) {
-            if (is_bool($value) && !$supportsBoolean) {
-                $data[$columnName] = $value ? 1 : 0;
-            }
-        }
-        return $data;
     }
 }

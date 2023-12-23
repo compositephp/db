@@ -98,7 +98,7 @@ final class AbstractTableTest extends \PHPUnit\Framework\TestCase
     /**
      * @dataProvider buildWhere_dataProvider
      */
-    public function test_buildWhere($where, $expectedSQL, $expectedParams)
+    public function test_buildWhere($where, $expectedSQL, $expectedParams): void
     {
         $table = new Tables\TestStrictTable();
 
@@ -189,5 +189,15 @@ final class AbstractTableTest extends \PHPUnit\Framework\TestCase
                 ['column1' => 1, 'column3' => 5]
             ]
         ];
+    }
+
+    public function test_databaseSpecific(): void
+    {
+        $mySQLTable = new Tables\TestMySQLTable();
+        $this->assertEquals('`column`', $mySQLTable->escapeIdentifierPub('column'));
+        $this->assertEquals('`Database`.`Table`', $mySQLTable->escapeIdentifierPub('Database.Table'));
+
+        $postgresTable = new Tables\TestPostgresTable();
+        $this->assertEquals('"column"', $postgresTable->escapeIdentifierPub('column'));
     }
 }

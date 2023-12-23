@@ -19,7 +19,7 @@ class TestUniqueTable extends AbstractTable implements IUniqueTable
         $this->init();
     }
 
-    public function save(AbstractEntity|TestUniqueEntity &$entity): void
+    public function save(AbstractEntity|TestUniqueEntity $entity): void
     {
         if ($entity->name === 'Exception') {
             throw new \Exception('Test Exception');
