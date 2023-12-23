@@ -67,7 +67,7 @@ class ConnectionManager
                 $configFile
             ));
         }
-        $configFileContent = require_once $configFile;
+        $configFileContent = require $configFile;
         if (empty($configFileContent) || !is_array($configFileContent)) {
             throw new DbException(sprintf(
                 'Connections config file `%s` should return array of connection params',
