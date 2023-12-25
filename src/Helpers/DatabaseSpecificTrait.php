@@ -52,7 +52,11 @@ trait DatabaseSpecificTrait
     {
         $this->identifyPlatform();
         if ($this->isMySQL) {
-            return implode('.', array_map(fn ($part) => "`$part`", explode('.', $key)));
+            if (strpos($key, '.')) {
+                return implode('.', array_map(fn ($part) => "`$part`", explode('.', $key)));
+            } else {
+                return "`$key`";
+            }
         } else {
             return '"' . $key . '"';
         }
