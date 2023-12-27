@@ -1,6 +1,6 @@
 {
     "name": "compositephp/db",
-    "description": "PHP 8.1+ ORM and Table Gateway",
+    "description": "PHP 8.1+ DataMapper and Table Gateway",
     "type": "library",
     "license": "MIT",
     "minimum-stability": "dev",

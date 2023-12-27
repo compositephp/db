@@ -3,48 +3,35 @@
 [![Build Status](https://github.com/compositephp/db/actions/workflows/main.yml/badge.svg)](https://github.com/compositephp/db/actions)
 [![Codecov](https://codecov.io/gh/compositephp/db/branch/master/graph/badge.svg)](https://codecov.io/gh/compositephp/db/)
 
-Composite DB is lightweight and fast PHP ORM, DataMapper and Table Gateway which allows you to represent your SQL tables 
+Composite DB is lightweight and fast PHP DataMapper and Table Gateway which allows you to represent your SQL tables 
 scheme in OOP style using full power of PHP 8.1+ class syntax. 
 
 It also gives you CRUD, query builder and automatic caching out of the box, so you can start
 to work with your database from php code in a minutes!
 
 Overview:
-* [Mission](#mission)
+* [Features](#features)
 * [Requirements](#requirements)
 * [Installation](#installation)
 * [Quick example](#quick-example)
 * [Documentation](doc/README.md)
 
-## Mission
-You probably may ask, why do you need another ORM if there are already popular Doctrine, CycleORM, etc.?
-
-Composite DB solves multiple problems:
+## Features
 
 * **Lightweight** - easier entity schema, no getters and setters, you don't need attributes for each column definition, 
 just use native php class syntax.
-* **Speed** - it's 1.5x faster in pure SQL queries mode and many times faster in automatic caching mode.
-* **Easy caching** - gives you CRUD operations caching out of the box and in general its much easier to work with cached "selects".
+* **Speed** - it's 1.5x faster in pure SQL queries mode and many times faster in automatic caching mode (see [benchmark](https://github.com/compositephp/php-orm-benchmark)).
+* **Easy caching** - gives you CRUD operations caching out of the box and in general it's much easier to work with cached "selects".
 * **Strict types** - Composite DB forces you to be more strict typed and makes your IDE happy.
 * **Hydration** - you can serialize your Entities to plain array or json and deserialize them back.
-* **Flexibility** - gives you more freedom to extend Repositories, for example its easier to build sharding tables.
+* **Flexibility** - gives you more freedom to extend Repositories, for example it's easier to build sharding tables.
 * **Code generation** - you can generate Entity and Repository classes from your SQL tables.
-* **Division of responsibility** - there is no "god" entity manager, every Entity has its own Repository class and its the only entry point to make queries to your table.
+* **Division of responsibility** - every Entity has its own Repository class, and it's the only entry point to make queries to your table.
 
 It also has many popular features such as:
 
 * **Query Builder** - build your queries with constructor, based on [doctrine/dbal](https://github.com/doctrine/dbal)
 * **Migrations** - synchronise your php entities with database tables
-
-But there is 1 sacrifice for all these features - there is no support for relations in Composite DB. Its too much
-uncontrollable magic and hidden bottlenecks with "JOINs" and its not possible to implement automatic caching with
-relations. We recommend to have full control and make several cached select queries instead of "JOINs".
-
-### When you shouldn't use Composite DB
-
-1. If you have intricate structure with many foreign keys in your database 
-2. You 100% sure in your indexes and fully trust "JOINs" performance
-3. You dont want to do extra cached select queries and want some magic
 
 ## Requirements
 
@@ -180,7 +167,7 @@ $user = User::fromArray([
 ]);
 ```
 
-And thats it, no special getters or setters, no "behaviours" or extra code, smart entity casts everything automatically.
+And that's it, no special getters or setters, no "behaviours" or extra code, smart entity casts everything automatically.
 More about Entity and supported auto casting types you can find [here](doc/entity.md).
 
 ## License:
