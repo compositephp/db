@@ -130,6 +130,20 @@ final class CombinedTransactionTest extends \PHPUnit\Framework\TestCase
         $this->assertNotNull($compositeTable->findOne($cEntity->user_id, $cEntity->post_id));
     }
 
+    public function test_try(): void
+    {
+        $compositeTable = new Tables\TestCompositeTable();
+        $entity = new Entities\TestCompositeEntity(user_id: mt_rand(1, 1000), post_id: mt_rand(1, 1000), message: 'Bar');;
+
+        try {
+            $transaction = new CombinedTransaction();
+            $transaction->save($compositeTable, $entity);
+            $transaction->try(fn() => throw new \Exception('test'));
+            $transaction->commit();
+        } catch (DbException) {}
+        $this->assertNull($compositeTable->findOne($entity->user_id, $entity->post_id));
+    }
+
     public function test_lockFailed(): void
     {
         $cache = new Helpers\FalseCache();

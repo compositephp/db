@@ -54,6 +54,19 @@ class CombinedTransaction
         });
     }
 
+    /**
+     * @throws Exceptions\DbException
+     */
+    public function try(callable $callback): void
+    {
+        try {
+            $callback();
+        } catch (\Throwable $e) {
+            $this->rollback();
+            throw new Exceptions\DbException($e->getMessage(), 500, $e);
+        }
+    }
+
     public function rollback(): void
     {
         foreach ($this->transactions as $connection) {
