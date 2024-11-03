@@ -8,6 +8,7 @@ use Doctrine\DBAL\Configuration;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Exception;
+use Doctrine\DBAL\Schema\DefaultSchemaManagerFactory;
 
 class ConnectionManager
 {
@@ -24,6 +25,12 @@ class ConnectionManager
     {
         if (!isset(self::$connections[$name])) {
             try {
+                if (!$config) {
+                    $config = new Configuration();
+                }
+                if (!$config->getSchemaManagerFactory()) {
+                    $config->setSchemaManagerFactory(new DefaultSchemaManagerFactory());
+                }
                 self::$connections[$name] = DriverManager::getConnection(
                     params: self::getConnectionParams($name),
                     config: $config,
