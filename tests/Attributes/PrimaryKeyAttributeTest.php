@@ -5,6 +5,7 @@ namespace Composite\DB\Tests\Attributes;
 use Composite\DB\TableConfig;
 use Composite\Entity\AbstractEntity;
 use Composite\DB\Attributes;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 final class PrimaryKeyAttributeTest extends \PHPUnit\Framework\TestCase
 {
@@ -34,9 +35,7 @@ final class PrimaryKeyAttributeTest extends \PHPUnit\Framework\TestCase
         ];
     }
 
-    /**
-     * @dataProvider primaryKey_dataProvider
-     */
+    #[DataProvider('primaryKey_dataProvider')]
     public function test_primaryKey(AbstractEntity $entity, array $expected): void
     {
         $schema = $entity::schema();

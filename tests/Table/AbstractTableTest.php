@@ -7,6 +7,7 @@ use Composite\DB\Tests\TestStand\Entities;
 use Composite\DB\Tests\TestStand\Tables;
 use Composite\Entity\AbstractEntity;
 use Composite\Entity\Exceptions\EntityException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 
@@ -54,9 +55,7 @@ final class AbstractTableTest extends \PHPUnit\Framework\TestCase
         ];
     }
 
-    /**
-     * @dataProvider getPkCondition_dataProvider
-     */
+    #[DataProvider('getPkCondition_dataProvider')]
     public function test_getPkCondition(AbstractTable $table, int|string|array|AbstractEntity|UuidInterface $object, array $expected): void
     {
         $reflectionMethod = new \ReflectionMethod($table, 'getPkCondition');
@@ -95,9 +94,7 @@ final class AbstractTableTest extends \PHPUnit\Framework\TestCase
         $this->assertEmpty($empty);
     }
 
-    /**
-     * @dataProvider buildWhere_dataProvider
-     */
+    #[DataProvider('buildWhere_dataProvider')]
     public function test_buildWhere($where, $expectedSQL, $expectedParams): void
     {
         $table = new Tables\TestStrictTable();

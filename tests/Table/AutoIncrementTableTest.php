@@ -9,6 +9,7 @@ use Composite\DB\Tests\Helpers;
 use Composite\DB\Tests\TestStand\Tables;
 use Composite\DB\Tests\TestStand\Entities;
 use Composite\DB\Tests\TestStand\Interfaces\IAutoincrementTable;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 final class AutoIncrementTableTest extends \PHPUnit\Framework\TestCase
 {
@@ -36,8 +37,8 @@ final class AutoIncrementTableTest extends \PHPUnit\Framework\TestCase
 
     /**
      * @param class-string<Entities\TestAutoincrementEntity|Entities\TestAutoincrementSdEntity> $class
-     * @dataProvider crud_dataProvider
      */
+    #[DataProvider('crud_dataProvider')]
     public function test_crud(AbstractTable&IAutoincrementTable $table, string $class): void
     {
         $table->truncate();

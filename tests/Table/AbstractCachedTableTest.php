@@ -3,13 +3,12 @@
 namespace Composite\DB\Tests\Table;
 
 use Composite\DB\AbstractCachedTable;
-use Composite\DB\AbstractTable;
-use Composite\DB\Exceptions\DbException;
 use Composite\DB\Tests\TestStand\Entities;
 use Composite\DB\Tests\TestStand\Tables;
 use Composite\DB\Where;
 use Composite\Entity\AbstractEntity;
 use Composite\DB\Tests\Helpers;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Ramsey\Uuid\Uuid;
 
 final class AbstractCachedTableTest extends \PHPUnit\Framework\TestCase
@@ -43,9 +42,7 @@ final class AbstractCachedTableTest extends \PHPUnit\Framework\TestCase
         ];
     }
 
-    /**
-     * @dataProvider getOneCacheKey_dataProvider
-     */
+    #[DataProvider('getOneCacheKey_dataProvider')]
     public function test_getOneCacheKey(AbstractCachedTable $table, AbstractEntity $object, string $expected): void
     {
         $reflectionMethod = new \ReflectionMethod($table, 'getOneCacheKey');
@@ -88,9 +85,7 @@ final class AbstractCachedTableTest extends \PHPUnit\Framework\TestCase
         ];
     }
 
-    /**
-     * @dataProvider getCountCacheKey_dataProvider
-     */
+    #[DataProvider('getCountCacheKey_dataProvider')]
     public function test_getCountCacheKey(array|Where $where, string $expected): void
     {
         $table = new Tables\TestAutoincrementCachedTable(Helpers\CacheHelper::getCache());
@@ -159,9 +154,7 @@ final class AbstractCachedTableTest extends \PHPUnit\Framework\TestCase
         ];
     }
 
-    /**
-     * @dataProvider getListCacheKey_dataProvider
-     */
+    #[DataProvider('getListCacheKey_dataProvider')]
     public function test_getListCacheKey(array|Where $where, array $orderBy, ?int $limit, string $expected): void
     {
         $table = new Tables\TestAutoincrementCachedTable(Helpers\CacheHelper::getCache());
@@ -197,9 +190,7 @@ final class AbstractCachedTableTest extends \PHPUnit\Framework\TestCase
         ];
     }
 
-    /**
-     * @dataProvider getCustomCacheKey_dataProvider
-     */
+    #[DataProvider('getCustomCacheKey_dataProvider')]
     public function test_getCustomCacheKey(array $parts, string $expected): void
     {
         $table = new Tables\TestAutoincrementCachedTable(Helpers\CacheHelper::getCache());
@@ -253,9 +244,7 @@ final class AbstractCachedTableTest extends \PHPUnit\Framework\TestCase
         ];
     }
 
-    /**
-     * @dataProvider collectCacheKeysByEntity_dataProvider
-     */
+    #[DataProvider('collectCacheKeysByEntity_dataProvider')]
     public function test_collectCacheKeysByEntity(AbstractEntity $entity, AbstractCachedTable $table, array $expected): void
     {
         $reflectionMethod = new \ReflectionMethod($table, 'collectCacheKeysByEntity');

@@ -4,12 +4,11 @@ namespace Composite\DB\Tests\MultiQuery;
 
 use Composite\DB\ConnectionManager;
 use Composite\DB\MultiQuery\MultiInsert;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class MultiInsertTest extends \PHPUnit\Framework\TestCase
 {
-    /**
-     * @dataProvider multiInsertQuery_dataProvider
-     */
+    #[DataProvider('multiInsertQuery_dataProvider')]
     public function test_multiInsertQuery($tableName, $rows, $expectedSql, $expectedParameters)
     {
         $connection = ConnectionManager::getConnection('sqlite');

@@ -7,6 +7,7 @@ use Composite\DB\Exceptions\DbException;
 use Composite\DB\Tests\TestStand\Entities;
 use Composite\DB\Tests\TestStand\Tables;
 use Composite\DB\Tests\Helpers;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 final class CombinedTransactionTest extends \PHPUnit\Framework\TestCase
 {
@@ -185,9 +186,7 @@ final class CombinedTransactionTest extends \PHPUnit\Framework\TestCase
         $this->assertNotEmpty($table->findByPk($e2->id));
     }
 
-    /**
-     * @dataProvider buildLockKey_dataProvider
-     */
+    #[DataProvider('buildLockKey_dataProvider')]
     public function test_buildLockKey($keyParts, $expectedResult)
     {
         $reflection = new \ReflectionClass(CombinedTransaction::class);

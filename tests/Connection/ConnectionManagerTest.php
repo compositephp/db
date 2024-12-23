@@ -5,6 +5,7 @@ namespace Composite\DB\Tests\Connection;
 use Composite\DB\ConnectionManager;
 use Composite\DB\Exceptions\DbException;
 use Doctrine\DBAL\Connection;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 final class ConnectionManagerTest extends \PHPUnit\Framework\TestCase
 {
@@ -42,9 +43,7 @@ final class ConnectionManagerTest extends \PHPUnit\Framework\TestCase
         ];
     }
 
-    /**
-     * @dataProvider invalidConfig_dataProvider
-     */
+    #[DataProvider('invalidConfig_dataProvider')]
     public function test_invalidConfig(string $configPath): void
     {
         $reflection = new \ReflectionClass(ConnectionManager::class);

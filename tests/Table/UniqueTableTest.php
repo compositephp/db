@@ -7,6 +7,7 @@ use Composite\DB\Tests\Helpers;
 use Composite\DB\Tests\TestStand\Entities;
 use Composite\DB\Tests\TestStand\Tables;
 use Composite\DB\Tests\TestStand\Interfaces\IUniqueTable;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Ramsey\Uuid\Uuid;
 
 final class UniqueTableTest extends \PHPUnit\Framework\TestCase
@@ -27,8 +28,8 @@ final class UniqueTableTest extends \PHPUnit\Framework\TestCase
 
     /**
      * @param class-string<Entities\TestUniqueEntity> $class
-     * @dataProvider crud_dataProvider
      */
+    #[DataProvider('crud_dataProvider')]
     public function test_crud(AbstractTable&IUniqueTable $table, string $class): void
     {
         $table->truncate();

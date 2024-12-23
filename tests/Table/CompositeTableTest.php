@@ -9,6 +9,7 @@ use Composite\DB\Tests\Helpers;
 use Composite\DB\Tests\TestStand\Tables;
 use Composite\DB\Tests\TestStand\Entities;
 use Composite\DB\Tests\TestStand\Interfaces\ICompositeTable;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 final class CompositeTableTest extends \PHPUnit\Framework\TestCase
 {
@@ -28,8 +29,9 @@ final class CompositeTableTest extends \PHPUnit\Framework\TestCase
 
     /**
      * @param class-string<Entities\TestCompositeEntity> $class
-     * @dataProvider crud_dataProvider
+     * @throws \Throwable
      */
+    #[DataProvider('crud_dataProvider')]
     public function test_crud(AbstractTable&ICompositeTable $table, string $class): void
     {
         $table->truncate();
