@@ -3,6 +3,7 @@
 namespace Composite\DB\Tests\Table;
 
 use Composite\DB\AbstractTable;
+use Composite\DB\TableConfig;
 use Composite\DB\Tests\TestStand\Entities;
 use Composite\DB\Tests\TestStand\Tables;
 use Composite\Entity\AbstractEntity;
@@ -196,5 +197,26 @@ final class AbstractTableTest extends \PHPUnit\Framework\TestCase
 
         $postgresTable = new Tables\TestPostgresTable();
         $this->assertEquals('"column"', $postgresTable->escapeIdentifierPub('column'));
+    }
+
+    public function test_getPkCondition_throwsExceptionWhenNoPrimaryKeys(): void
+    {
+        $mockTable = new class extends AbstractTable {
+            protected function getConfig(): TableConfig
+            {
+                return new TableConfig(
+                    connectionName: 'default',
+                    tableName: 'test_table',
+                    entityClass: AbstractEntity::class,
+                    primaryKeys: [], // Empty primary keys
+                );
+            }
+        };
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage("Primary keys are not defined in `" . get_class($mockTable) . "` table config");
+
+        $reflectionMethod = new \ReflectionMethod($mockTable, 'getPkCondition');
+        $reflectionMethod->invoke($mockTable, 1);
     }
 }

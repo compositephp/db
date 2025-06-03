@@ -39,9 +39,8 @@ trait DatabaseSpecificTrait
      */
     private function prepareDataForSql(array $data): array
     {
-        $this->identifyPlatform();
         foreach ($data as $columnName => $value) {
-            if (is_bool($value) && !$this->isPostgreSQL) {
+            if (is_bool($value)) {
                 $data[$columnName] = $value ? 1 : 0;
             }
         }

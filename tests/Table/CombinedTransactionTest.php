@@ -204,4 +204,42 @@ final class CombinedTransactionTest extends \PHPUnit\Framework\TestCase
             'more than max length' => [[str_repeat('a', 55)], sha1('composite.lock.' . str_repeat('a', 55))],
         ];
     }
+
+    public function test_saveWithNoChanges(): void
+    {
+        $autoIncrementTable = new Tables\TestAutoincrementTable();
+
+        $entity = new Entities\TestAutoincrementEntity(name: 'TestNoChanges');
+        $autoIncrementTable->save($entity);
+
+        $transaction = new CombinedTransaction();
+        $transaction->save($autoIncrementTable, $entity);
+        $transaction->commit();
+
+        $this->assertNotNull($autoIncrementTable->findByPk($entity->id));
+
+        $autoIncrementTable->delete($entity);
+    }
+
+    public function test_saveManyWithEmptyEntities(): void
+    {
+        $autoIncrementTable = new Tables\TestAutoincrementTable();
+
+        $transaction = new CombinedTransaction();
+        $transaction->saveMany($autoIncrementTable, []);
+        $transaction->commit();
+
+        $this->assertTrue(true);
+    }
+
+    public function test_deleteManyWithEmptyEntities(): void
+    {
+        $autoIncrementTable = new Tables\TestAutoincrementTable();
+
+        $transaction = new CombinedTransaction();
+        $transaction->deleteMany($autoIncrementTable, []);
+        $transaction->commit();
+
+        $this->assertTrue(true);
+    }
 }

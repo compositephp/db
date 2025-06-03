@@ -6,8 +6,10 @@ use Composite\DB\Exceptions\DbException;
 use Composite\DB\MultiQuery\MultiInsert;
 use Composite\DB\MultiQuery\MultiSelect;
 use Composite\Entity\AbstractEntity;
+use Composite\Entity\Columns;
 use Composite\Entity\Helpers\DateTimeHelper;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ParameterType;
 use Ramsey\Uuid\UuidInterface;
 
 abstract class AbstractTable
@@ -52,8 +54,13 @@ abstract class AbstractTable
             $connection = $this->getConnection();
             $this->checkUpdatedAt($entity);
 
-            $insertData = $this->prepareDataForSql($entity->toArray());
-            $this->getConnection()->insert($this->getTableName(), $insertData);
+            $insertData = $entity->toArray();
+            $preparedInsertData = $this->prepareDataForSql($insertData);
+            $this->getConnection()->insert(
+                table: $this->getTableName(),
+                data: $preparedInsertData,
+                types: $this->getDoctrineTypes($insertData),
+            );
 
             if ($this->config->autoIncrementKey && ($lastInsertedId = $connection->lastInsertId())) {
                 $insertData[$this->config->autoIncrementKey] = intval($lastInsertedId);
@@ -66,7 +73,6 @@ abstract class AbstractTable
             if (!$changedColumns = $entity->getChangedColumns()) {
                 return;
             }
-            $changedColumns = $this->prepareDataForSql($changedColumns);
             if ($this->config->hasUpdatedAt() && property_exists($entity, 'updated_at')) {
                 $entity->updated_at = new \DateTimeImmutable();
                 $changedColumns['updated_at'] = DateTimeHelper::dateTimeToString($entity->updated_at);
@@ -81,16 +87,42 @@ abstract class AbstractTable
             }
             $updateString = implode(', ', array_map(fn ($key) => $this->escapeIdentifier($key) . "=?", array_keys($changedColumns)));
             $whereString = implode(' AND ', array_map(fn ($key) => $this->escapeIdentifier($key) . "=?", array_keys($whereParams)));
+            $preparedParams = array_merge(
+                array_values($this->prepareDataForSql($changedColumns)),
+                array_values($this->prepareDataForSql($whereParams)),
+            );
+            $types = array_merge(
+                $this->getDoctrineTypes($changedColumns),
+                $this->getDoctrineTypes($whereParams),
+            );
 
             $entityUpdated = (bool)$this->getConnection()->executeStatement(
                 sql: "UPDATE " . $this->escapeIdentifier($this->getTableName()) . " SET $updateString WHERE $whereString;",
-                params: array_merge(array_values($changedColumns), array_values($whereParams)),
+                params: $preparedParams,
+                types: $types,
             );
             if ($this->config->hasOptimisticLock() && !$entityUpdated) {
                 throw new Exceptions\LockException('Failed to update entity version, concurrency modification, rolling back.');
             }
             $entity->resetChangedColumns($changedColumns);
         }
+    }
+
+    private function getDoctrineTypes(array $data): array
+    {
+        $result = [];
+        foreach ($data as $value) {
+            if (is_bool($value)) {
+                $result[] = ParameterType::BOOLEAN;
+            } elseif (is_int($value)) {
+                $result[] = ParameterType::INTEGER;
+            } elseif (is_null($value)) {
+                $result[] = ParameterType::NULL;
+            } else {
+                $result[] = ParameterType::STRING;
+            }
+        }
+        return $result;
     }
 
     /**
@@ -124,7 +156,11 @@ abstract class AbstractTable
                         rows: $chunk,
                     );
                     if ($multiInsert->getSql()) {
-                        $connection->executeStatement($multiInsert->getSql(), $multiInsert->getParameters());
+                        $connection->executeStatement(
+                            sql: $multiInsert->getSql(),
+                            params: $multiInsert->getParameters(),
+                            types: $this->getDoctrineTypes(array_keys($chunk[0])),
+                        );
                     }
                 }
             }
@@ -317,6 +353,9 @@ abstract class AbstractTable
      */
     protected function getPkCondition(int|string|array|AbstractEntity|UuidInterface $data): array
     {
+        if (empty($this->config->primaryKeys)) {
+            throw new \Exception("Primary keys are not defined in `" . $this::class . "` table config");
+        }
         $condition = [];
         if ($data instanceof AbstractEntity) {
             if ($data->isNew()) {

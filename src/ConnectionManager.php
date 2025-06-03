@@ -3,12 +3,10 @@
 namespace Composite\DB;
 
 use Composite\DB\Exceptions\DbException;
-use Doctrine\Common\EventManager;
 use Doctrine\DBAL\Configuration;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Exception;
-use Doctrine\DBAL\Schema\DefaultSchemaManagerFactory;
 
 class ConnectionManager
 {
@@ -21,38 +19,26 @@ class ConnectionManager
     /**
      * @throws DbException
      */
-    public static function getConnection(string $name, ?Configuration $config = null, ?EventManager $eventManager = null): Connection
+    public static function getConnection(string $name, ?Configuration $config = null): Connection
     {
+        if (self::$configs === null) {
+            self::$configs = self::loadConfigs();
+        }
         if (!isset(self::$connections[$name])) {
             try {
-                if (!$config) {
-                    $config = new Configuration();
-                }
-                if (!$config->getSchemaManagerFactory()) {
-                    $config->setSchemaManagerFactory(new DefaultSchemaManagerFactory());
+                $connectionParams = self::$configs[$name] ?? throw new DbException("Connection config `$name` not found");
+                if (!$config && isset($connectionParams['configuration']) && $connectionParams['configuration'] instanceof Configuration) {
+                    $config = $connectionParams['configuration'];
                 }
                 self::$connections[$name] = DriverManager::getConnection(
-                    params: self::getConnectionParams($name),
+                    params: $connectionParams,
                     config: $config,
-                    eventManager: $eventManager,
                 );
             } catch (Exception $e) {
                 throw new DbException($e->getMessage(), $e->getCode(), $e);
             }
         }
         return self::$connections[$name];
-    }
-
-    /**
-     * @return array<string, mixed>
-     * @throws DbException
-     */
-    private static function getConnectionParams(string $name): array
-    {
-        if (self::$configs === null) {
-            self::$configs = self::loadConfigs();
-        }
-        return self::$configs[$name] ?? throw new DbException("Connection config `$name` not found");
     }
 
     /**

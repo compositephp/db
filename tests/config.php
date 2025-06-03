@@ -1,5 +1,7 @@
 <?php declare(strict_types=1);
 
+use Doctrine\DBAL\Configuration;
+
 return [
     'sqlite' => [
         'driver' => 'pdo_sqlite',
@@ -11,6 +13,7 @@ return [
         'user' => 'test',
         'password' => 'test',
         'host' => '127.0.0.1',
+        'configuration' => new Configuration(),
     ],
     'postgres' => [
         'driver' => 'pdo_pgsql',

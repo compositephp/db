@@ -17,11 +17,12 @@ class CombinedTransaction
     /**
      * @throws Exceptions\DbException
      */
-    public function save(AbstractTable $table, AbstractEntity &$entity): void
+    public function save(AbstractTable $table, AbstractEntity $entity): void
     {
-        $this->doInTransaction($table, function () use ($table, &$entity) {
-            $table->save($entity);
-        });
+        if (!$entity->isNew() && !$entity->getChangedColumns()) {
+            return;
+        }
+        $this->doInTransaction($table, fn() => $table->save($entity));
     }
 
     /**
@@ -31,6 +32,9 @@ class CombinedTransaction
      */
     public function saveMany(AbstractTable $table, array $entities): void
     {
+        if (!$entities) {
+            return;
+        }
         $this->doInTransaction($table, fn () => $table->saveMany($entities));
     }
 
@@ -41,17 +45,18 @@ class CombinedTransaction
      */
     public function deleteMany(AbstractTable $table, array $entities): void
     {
+        if (!$entities) {
+            return;
+        }
         $this->doInTransaction($table, fn () => $table->deleteMany($entities));
     }
 
     /**
      * @throws Exceptions\DbException
      */
-    public function delete(AbstractTable $table, AbstractEntity &$entity): void
+    public function delete(AbstractTable $table, AbstractEntity $entity): void
     {
-        $this->doInTransaction($table, function () use ($table, &$entity) {
-            $table->delete($entity);
-        });
+        $this->doInTransaction($table, fn () => $table->delete($entity));
     }
 
     /**
@@ -82,9 +87,7 @@ class CombinedTransaction
     {
         foreach ($this->transactions as $connectionName => $connection) {
             try {
-                if (!$connection->commit()) {
-                    throw new Exceptions\DbException("Could not commit transaction for database `$connectionName`");
-                }
+                $connection->commit();
             // I have no idea how to simulate failed commit
             // @codeCoverageIgnoreStart
             } catch (\Throwable $e) {
@@ -119,7 +122,11 @@ class CombinedTransaction
         if (!$this->cache || !$this->lockKey) {
             return;
         }
-        $this->cache->delete($this->lockKey);
+        if (!$this->cache->delete($this->lockKey)) {
+            // @codeCoverageIgnoreStart
+            throw new DbException("Failed to release lock `{$this->lockKey}`");
+            // @codeCoverageIgnoreEnd
+        }
     }
 
     private function doInTransaction(AbstractTable $table, callable $callback): void

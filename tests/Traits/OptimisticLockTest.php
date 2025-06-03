@@ -29,7 +29,7 @@ final class OptimisticLockTest extends \PHPUnit\Framework\TestCase
         $aiEntity2->name = 'John2';
         $aiTable2->save($aiEntity2);
 
-        $this->assertTrue($db->commit());
+        $db->commit();
 
         $aiEntity3 = $aiTable1->findByPk($aiEntity1->id);
         $this->assertEquals('John2', $aiEntity3->name);
@@ -57,7 +57,7 @@ final class OptimisticLockTest extends \PHPUnit\Framework\TestCase
         }
         $this->assertTrue($exceptionCaught);
 
-        $this->assertTrue($db->rollBack());
+        $db->rollBack();
 
         $olEntity3 = $olTable1->findByPk($olEntity1->id);
         $this->assertEquals(1, $olEntity3->getVersion());
